@@ -1,0 +1,11 @@
+{
+  "author": "kytos",
+  "username": "kytos",
+  "name": "storehouse",
+  "description": "Persistence NApp with supports (not yet) multiple backends",
+  "version": "latest",
+  "napp_dependencies": [],
+  "license": "MIT",
+  "tags": ["persistency", "storage", "save"],
+  "url": "https://github.com/kytos/storehouse"
+}
