@@ -10,6 +10,7 @@ from uuid import uuid4
 from flask import jsonify, request
 
 from kytos.core import KytosNApp, log, rest
+from kytos.core.helpers import listen_to
 from napps.kytos.storehouse import settings  # pylint: disable=unused-import
 from napps.kytos.storehouse.backends.fs import FileSystem
 
@@ -70,7 +71,7 @@ class Main(KytosNApp):
 
     @staticmethod
     @rest('v1/<namespace>', methods=['POST'])
-    def create(namespace):
+    def rest_create(namespace):
         """Create a box in a namespace based on JSON input."""
         data = request.get_json(silent=True)
         if not data:
@@ -84,7 +85,7 @@ class Main(KytosNApp):
 
     @staticmethod
     @rest('v1/<namespace>', methods=['GET'])
-    def list(namespace):
+    def rest_list(namespace):
         """List all boxes in a namespace."""
         backend = FileSystem()
         result = backend.list(namespace)
@@ -92,7 +93,7 @@ class Main(KytosNApp):
 
     @staticmethod
     @rest('v1/<namespace>/<box_id>', methods=['GET'])
-    def retrieve(namespace, box_id):
+    def rest_retrieve(namespace, box_id):
         """Retrieve and return a box from a namespace."""
         backend = FileSystem()
         box = backend.retrieve(namespace, box_id)
@@ -103,14 +104,77 @@ class Main(KytosNApp):
 
     @staticmethod
     @rest('v1/<namespace>/<box_id>', methods=['DELETE'])
-    def delete(namespace, box_id):
+    def rest_delete(namespace, box_id):
         """Delete a box from a namespace."""
         backend = FileSystem()
         result = backend.delete(namespace, box_id)
         if result:
-            return jsonify({"response": "Box deletedd"}), 202
+            return jsonify({"response": "Box deleted"}), 202
 
         return jsonify({"response": "Unable to complete request"}), 500
+
+    @staticmethod
+    @listen_to('kytos.storehouse.create')
+    def event_create(event):
+        """Create a box in a namespace based on an event."""
+        box = Box(event.content['data'], event.content['namespace'])
+        backend = FileSystem()
+        backend.create(box)
+
+        try:
+            event.content['callback'](box, error=False)
+        except KeyError:
+            log.error('Create: event without callback function!')
+        except TypeError as error:
+            log.error('Create: bad callback function!')
+            log.error(e)
+
+    @staticmethod
+    @listen_to('kytos.storehouse.retrieve')
+    def event_retrieve(event):
+        """Retrieve a box from a namespace based on an event."""
+        backend = FileSystem()
+        box = backend.retrieve(event.content['namespace'],
+                               event.content['box_id'])
+
+        try:
+            event.content['callback'](box, error=False)
+        except KeyError:
+            log.error('Retrieve: event without callback function!')
+        except TypeError:
+            log.error('Retrieve: bad callback function!')
+            log.error(e)
+
+    @staticmethod
+    @listen_to('kytos.storehouse.delete')
+    def event_delete(event):
+        """Delete a box from a namespace based on an event."""
+        backend = FileSystem()
+        result = backend.delete(event.content['namespace'],
+                                event.content['box_id'])
+
+        try:
+            event.content['callback'](result, error=False)
+        except KeyError:
+            log.error('Delete: event without callback function!')
+        except TypeError:
+            log.error('Delete: bad callback function!')
+            log.error(e)
+
+    @staticmethod
+    @listen_to('kytos.storehouse.list')
+    def event_list(event):
+        """List all boxes in a namespace based on an event."""
+        backend = FileSystem()
+        result = backend.list(event.content['namespace'])
+
+        try:
+            event.content['callback'](result, error=False)
+        except KeyError:
+            log.error('List: event without callback function!')
+        except TypeError:
+            log.error('List: bad callback function!')
+            log.error(e)
 
     def shutdown(self):
         """Execute before tha NApp is unloaded."""
