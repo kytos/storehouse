@@ -3,12 +3,12 @@
 Save and load data from the local filesystem.
 """
 
-from napps.kytos.storehouse.backends.base import StoreBase
+import pickle
 from pathlib import Path
 
-import pickle
+from napps.kytos.storehouse.backends.base import StoreBase
 
-DESTINATION_PATH="/tmp/kytos/storehouse"
+DESTINATION_PATH = "/tmp/kytos/storehouse"
 
 
 class FileSystem(StoreBase):
@@ -17,36 +17,41 @@ class FileSystem(StoreBase):
     Save and load data from the local filesystem.
     """
 
-    def _create_dirs(self, destination):
+    @staticmethod
+    def _create_dirs(destination):
         Path(destination).mkdir(parents=True, exist_ok=True)
 
-    def _get_destination(self, namespace):
+    @staticmethod
+    def _get_destination(namespace):
         return Path(DESTINATION_PATH, namespace)
 
-    def _write_to_file(self, filename, box):
-        with open(filename, 'wb') as fp:
-            pickle.dump(box, fp)
+    @staticmethod
+    def _write_to_file(filename, box):
+        with open(filename, 'wb') as save_file:
+            pickle.dump(box, save_file)
 
-    def _load_from_file(self, filename):
+    @staticmethod
+    def _load_from_file(filename):
         try:
-            with open(filename, 'rb') as fp:
-                data = pickle.load(fp)
+            with open(filename, 'rb') as load_file:
+                data = pickle.load(load_file)
             return data
-        except Exception: # TODO: specific exceptions here
+        except pickle.PickleError:
             return False
 
-    def _delete_file(self, path):
+    @staticmethod
+    def _delete_file(path):
         if path.exists():
             return path.unlink()
-        else:
-            return False
+
+        return False
 
     def _list_namespace(self, namespace):
         path = self._get_destination(namespace)
         if path.exists():
             return [x.name for x in path.iterdir() if not x.is_dir()]
-        else:
-            return []
+
+        return []
 
     def create(self, box):
         """Create a new box."""
@@ -66,10 +71,8 @@ class FileSystem(StoreBase):
     def delete(self, namespace, box_id):
         """Delete a box from a namespace."""
         destination = self._get_destination(namespace).joinpath(box_id)
-        if self._delete_file(destination) is None:
-            return True
-        else:
-            return False
+
+        return self._delete_file(destination) is None
 
     def list(self, namespace):
         """List all the boxes in a namespace."""

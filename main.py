@@ -3,15 +3,15 @@
 Persistence NApp with support to multiple backends.
 """
 
-from kytos.core import KytosNApp, log, rest
-from napps.kytos.storehouse import settings
-from napps.kytos.storehouse.backends.fs import FileSystem
+import json
+from datetime import datetime
+from uuid import uuid4
 
 from flask import jsonify, request
-from uuid import uuid4
-from datetime import datetime
 
-import json
+from kytos.core import KytosNApp, log, rest
+from napps.kytos.storehouse import settings  # pylint: disable=unused-import
+from napps.kytos.storehouse.backends.fs import FileSystem
 
 
 class Box:
@@ -26,29 +26,29 @@ class Box:
         """
         self.data = data
         self.namespace = namespace
-        self.id = uuid4().hex
+        self.box_id = uuid4().hex
         self.created_at = str(datetime.utcnow())
-        self.owner = None # TODO: implement permissions
+        self.owner = None
 
     @classmethod
     def from_json(cls, json_data):
         """Create new instance from input JSON."""
         raw = json.loads(json_data)
         data = raw['data']
-        namespace = raw['data']
+        namespace = raw['namespace']
         return cls(data, namespace)
 
-    def as_dict(self):
+    def to_dict(self):
         """Return the instance as a python dictionary."""
         return {'data': self.data,
                 'namespace': self.namespace,
                 'owner': self.owner,
                 'created_at': self.created_at,
-                'id': self.id}
+                'id': self.box_id}
 
-    def as_json(self):
+    def to_json(self):
         """Return the instance as a JSON string."""
-        return json.dumps(self.as_dict(), indent=4)
+        return json.dumps(self.to_dict(), indent=4)
 
 
 class Main(KytosNApp):
@@ -68,47 +68,49 @@ class Main(KytosNApp):
         """Execute after the setup method."""
         pass
 
+    @staticmethod
     @rest('v1/<namespace>', methods=['POST'])
-    def create(self, namespace):
+    def create(namespace):
         """Create a box in a namespace based on JSON input."""
         data = request.get_json(silent=True)
         if not data:
-            return json.dumps({"response": "Invalid Request"}), 500
+            return jsonify({"response": "Invalid Request"}), 500
 
         box = Box(data, namespace)
-        # TODO: For now, we have only fs, but we must change this to support
-        # multiple backends
         backend = FileSystem()
         backend.create(box)
-        return json.dumps({"response": "Box created.",
-                           "id": box.id}), 201
+        return jsonify({"response": "Box created.",
+                        "id": box.box_id}), 201
 
+    @staticmethod
     @rest('v1/<namespace>', methods=['GET'])
-    def list(self, namespace):
+    def list(namespace):
         """List all boxes in a namespace."""
         backend = FileSystem()
         result = backend.list(namespace)
-        return json.dumps(result), 200
+        return jsonify(result), 200
 
+    @staticmethod
     @rest('v1/<namespace>/<box_id>', methods=['GET'])
-    def retrieve(self, namespace, box_id):
+    def retrieve(namespace, box_id):
         """Retrieve and return a box from a namespace."""
         backend = FileSystem()
         box = backend.retrieve(namespace, box_id)
         if not box:
-            return json.dumps({"response": "Not Found"}), 404
+            return jsonify({"response": "Not Found"}), 404
 
-        return json.dumps(box.data), 200
+        return jsonify(box.data), 200
 
+    @staticmethod
     @rest('v1/<namespace>/<box_id>', methods=['DELETE'])
-    def delete(self, namespace, box_id):
+    def delete(namespace, box_id):
         """Delete a box from a namespace."""
         backend = FileSystem()
         result = backend.delete(namespace, box_id)
         if result:
-            return json.dumps({"response": "Box deletedd"}), 202
-        else:
-            return json.dumps({"response": "Unable to complete request"}), 500
+            return jsonify({"response": "Box deletedd"}), 202
+
+        return jsonify({"response": "Unable to complete request"}), 500
 
     def shutdown(self):
         """Execute before tha NApp is unloaded."""
