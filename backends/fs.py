@@ -57,8 +57,8 @@ class FileSystem(StoreBase):
         """Create a new box."""
         destination = self._get_destination(box.namespace)
         self._create_dirs(destination)
-        self._write_to_file(destination.joinpath(box.id), box)
-        return box.id
+        self._write_to_file(destination.joinpath(box.box_id), box)
+        return box.box_id
 
     def retrieve(self, namespace, box_id):
         """Retrieve a box from a namespace."""
