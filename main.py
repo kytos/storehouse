@@ -1,6 +1,6 @@
 """Main module of kytos/storehouse Kytos Network Application.
 
-Persistence NApp with support to multiple backends
+Persistence NApp with support to multiple backends.
 """
 
 from kytos.core import KytosNApp, log, rest
@@ -13,8 +13,17 @@ from datetime import datetime
 
 import json
 
+
 class Box:
+    """Store data with the necesary metadata."""
+
     def __init__(self, data, namespace):
+        """Create a new Box instance.
+
+        Args:
+            data: Data to be stored in the box.
+            namespace: Namespace where the box belongs.
+        """
         self.data = data
         self.namespace = namespace
         self.id = uuid4().hex
@@ -23,19 +32,22 @@ class Box:
 
     @classmethod
     def from_json(cls, json_data):
+        """Create new instance from input JSON."""
         raw = json.loads(json_data)
         data = raw['data']
         namespace = raw['data']
         return cls(data, namespace)
 
     def as_dict(self):
-        return  {'data': self.data,
-                 'namespace': self.namespace,
-                 'owner': self.owner,
-                 'created_at': self.created_at,
-                 'id': self.id}
+        """Return the instance as a python dictionary."""
+        return {'data': self.data,
+                'namespace': self.namespace,
+                'owner': self.owner,
+                'created_at': self.created_at,
+                'id': self.id}
 
     def as_json(self):
+        """Return the instance as a JSON string."""
         return json.dumps(self.as_dict(), indent=4)
 
 
@@ -48,26 +60,17 @@ class Main(KytosNApp):
     def setup(self):
         """Replace the '__init__' method for the KytosNApp subclass.
 
-        The setup method is automatically called by the controller when your
-        application is loaded.
-
-        So, if you have any setup routine, insert it here.
+        Execute right after the NApp is loaded.
         """
-        pass
+        log.info("Storehouse NApp started.")
 
     def execute(self):
-        """This method is executed right after the setup method execution.
-
-        You can also use this method in loop mode if you add to the above setup
-        method a line like the following example:
-
-            self.execute_as_loop(30)  # 30-second interval.
-        """
+        """Execute after the setup method."""
         pass
 
     @rest('v1/<namespace>', methods=['POST'])
     def create(self, namespace):
-        """Create a box based on a data."""
+        """Create a box in a namespace based on JSON input."""
         data = request.get_json(silent=True)
         if not data:
             return json.dumps({"response": "Invalid Request"}), 500
@@ -82,12 +85,14 @@ class Main(KytosNApp):
 
     @rest('v1/<namespace>', methods=['GET'])
     def list(self, namespace):
+        """List all boxes in a namespace."""
         backend = FileSystem()
         result = backend.list(namespace)
         return json.dumps(result), 200
 
     @rest('v1/<namespace>/<box_id>', methods=['GET'])
     def retrieve(self, namespace, box_id):
+        """Retrieve and return a box from a namespace."""
         backend = FileSystem()
         box = backend.retrieve(namespace, box_id)
         if not box:
@@ -97,6 +102,7 @@ class Main(KytosNApp):
 
     @rest('v1/<namespace>/<box_id>', methods=['DELETE'])
     def delete(self, namespace, box_id):
+        """Delete a box from a namespace."""
         backend = FileSystem()
         result = backend.delete(namespace, box_id)
         if result:
@@ -105,8 +111,5 @@ class Main(KytosNApp):
             return json.dumps({"response": "Unable to complete request"}), 500
 
     def shutdown(self):
-        """This method is executed when your napp is unloaded.
-
-        If you have some cleanup procedure, insert it here.
-        """
-        pass
+        """Execute before tha NApp is unloaded."""
+        log.info("Storehouse NApp is shutting down.")
