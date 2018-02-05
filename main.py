@@ -70,6 +70,17 @@ class Main(KytosNApp):
         pass
 
     @staticmethod
+    def _execute_callback(event, data, error):
+        """Run the callback function for event calls to the NApp."""
+        try:
+            event.content['callback'](data, error)
+        except KeyError:
+            log.error('Create: event without callback function!')
+        except TypeError as exception:
+            log.error('Create: bad callback function!')
+            log.error(exception)
+
+    @staticmethod
     @rest('v1/<namespace>', methods=['POST'])
     def rest_create(namespace):
         """Create a box in a namespace based on JSON input."""
@@ -113,68 +124,68 @@ class Main(KytosNApp):
 
         return jsonify({"response": "Unable to complete request"}), 500
 
-    @staticmethod
     @listen_to('kytos.storehouse.create')
-    def event_create(event):
+    def event_create(self, event):
         """Create a box in a namespace based on an event."""
-        box = Box(event.content['data'], event.content['namespace'])
-        backend = FileSystem()
-        backend.create(box)
+        error = False
 
         try:
-            event.content['callback'](box, error=False)
-        except KeyError:
-            log.error('Create: event without callback function!')
-        except TypeError as error:
-            log.error('Create: bad callback function!')
-            log.error(e)
+            box = Box(event.content['data'], event.content['namespace'])
+            backend = FileSystem()
+            backend.create(box)
 
-    @staticmethod
+        except (AttributeError, KeyError, TypeError, ValueError):
+            box = None
+            error = True
+
+        self._execute_callback(event, box, error)
+
     @listen_to('kytos.storehouse.retrieve')
-    def event_retrieve(event):
+    def event_retrieve(self, event):
         """Retrieve a box from a namespace based on an event."""
-        backend = FileSystem()
-        box = backend.retrieve(event.content['namespace'],
-                               event.content['box_id'])
+        error = False
 
         try:
-            event.content['callback'](box, error=False)
-        except KeyError:
-            log.error('Retrieve: event without callback function!')
-        except TypeError:
-            log.error('Retrieve: bad callback function!')
-            log.error(e)
+            backend = FileSystem()
+            box = backend.retrieve(event.content['namespace'],
+                                   event.content['box_id'])
 
-    @staticmethod
+        except (AttributeError, KeyError, TypeError, ValueError):
+            box = None
+            error = True
+
+        self._execute_callback(event, box, error)
+
     @listen_to('kytos.storehouse.delete')
-    def event_delete(event):
+    def event_delete(self, event):
         """Delete a box from a namespace based on an event."""
-        backend = FileSystem()
-        result = backend.delete(event.content['namespace'],
-                                event.content['box_id'])
+        error = False
 
         try:
-            event.content['callback'](result, error=False)
-        except KeyError:
-            log.error('Delete: event without callback function!')
-        except TypeError:
-            log.error('Delete: bad callback function!')
-            log.error(e)
+            backend = FileSystem()
+            result = backend.delete(event.content['namespace'],
+                                    event.content['box_id'])
 
-    @staticmethod
+        except (AttributeError, KeyError, TypeError, ValueError):
+            result = None
+            error = True
+
+        self._execute_callback(event, result, error)
+
     @listen_to('kytos.storehouse.list')
-    def event_list(event):
+    def event_list(self, event):
         """List all boxes in a namespace based on an event."""
-        backend = FileSystem()
-        result = backend.list(event.content['namespace'])
+        error = False
 
         try:
-            event.content['callback'](result, error=False)
-        except KeyError:
-            log.error('List: event without callback function!')
-        except TypeError:
-            log.error('List: bad callback function!')
-            log.error(e)
+            backend = FileSystem()
+            result = backend.list(event.content['namespace'])
+
+        except (AttributeError, KeyError, TypeError, ValueError):
+            result = None
+            error = True
+
+        self._execute_callback(event, result, error)
 
     def shutdown(self):
         """Execute before tha NApp is unloaded."""
