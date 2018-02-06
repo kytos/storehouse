@@ -1,0 +1,164 @@
+openapi: 3.0.0
+info:
+  title: kytos/storehouse
+  version: latest
+  description: Persistence NApp with support to multiple backends.
+paths:
+  /api/kytos/storehouse/v1/{namespace}:
+    post:
+      summary: Create a Box in a namespace based on JSON input.
+      parameters:
+        - name: namespace
+          required: true
+          description: Name of the namespace where the data should be stored.
+          in: path
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - type: array
+                  items:
+                    type: integer
+                  example: [1,2,3,4,5]
+                - type: object
+                  properties:
+                    key1:
+                      type: string
+                      example: value1
+                    key2:
+                      type: integer
+                      example: 42
+              example:
+                - [1024,2048,4096]
+                - {
+                    "text_data": "text_value",
+                    "numeric_data": 42
+                  }
+      responses:
+        201:
+          description: Box created sucessfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+                    description: Box created.
+                    example: Box created
+                  id:
+                    type: string
+                    description: ID of the created Box.
+                    example: 742e6f874bd14a1cb5551e997f95b6d6
+        500:
+          description: Error when creating a new Box.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+                    description: Error creating Box.
+                    example: Invalid Request
+    get:
+      summary: List all boxes in a namespace.
+      parameters:
+        - name: namespace
+          required: true
+          description: Namespace containing Boxes to be listed.
+          in: path
+      responses:
+        200:
+          description: Box list returned sucessfully (can be an empty list).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  description: ID of the Boxes in the namespace.
+                  example: 742e6f874bd14a1cb5551e997f95b6d6
+  /api/kytos/storehouse/v1/{namespace}/{box_id}:
+    get:
+      summary: Retrieve and return a Box from a namespace.
+      parameters:
+        - name: namespace
+          required: true
+          description: Namespace containing the Box to be retrieved.
+          in: path
+        - name: box_id
+          required: true
+          description: ID of the Box to be retrieved.
+          in: path
+      responses:
+        200:
+          description: Box retrieved sucessfully.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: array
+                    items:
+                      type: integer
+                    example: [1,2,3,4,5]
+                  - type: object
+                    properties:
+                      key1:
+                        type: string
+                        example: value1
+                      key2:
+                        type: integer
+                        example: 42
+                example:
+                  - [1024,2048,4096]
+                  - {
+                      "text_data": "text_value",
+                      "numeric_data": 42
+                    }
+        404:
+          description: Box not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+                    description: Box not found.
+                    example: Not Found
+    delete:
+      summary: Delete a box from a namespace.
+      parameters:
+        - name: namespace
+          required: true
+          description: Namespace containing the Box to be deleted.
+          in: path
+        - name: box_id
+          required: true
+          description: ID of the Box to be deleted.
+          in: path
+      responses:
+        200:
+          description: Box deleted sucessfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+                    description: Box deleted succesfully. 
+                    example: Box deleted
+        500:
+          description: Error when deleting a Box.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+                    description: Error creating Box.
+                    example: Unable to complete request
