@@ -68,6 +68,12 @@ class FileSystem(StoreBase):
 
         return self._load_from_file(destination)
 
+    def update(self, namespace, box):
+        """Update a box from a namespace."""
+        destination = self._get_destination(box.namespace)
+        self._write_to_file(destination.joinpath(box.box_id), box)
+        return box.box_id
+
     def delete(self, namespace, box_id):
         """Delete a box from a namespace."""
         destination = self._get_destination(namespace).joinpath(box_id)

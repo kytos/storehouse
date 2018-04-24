@@ -103,6 +103,30 @@ class Main(KytosNApp):
         return jsonify(result), 200
 
     @staticmethod
+    @rest('v1/<namespace>/<box_id>', methods=['PUT', 'PATCH'])
+    def rest_update(namespace, box_id):
+        """Update a box_id from namespace."""
+        data = request.get_json(silent=True)
+
+        if not data:
+            return jsonify({"response": "Invalid Request"}), 500
+
+        backend= FileSystem()
+        box = backend.retrieve(namespace, box_id)
+
+        if not box:
+            return jsonify({"response": "Not Found"}), 404
+
+        if request.method == "PUT":
+            box.data = data
+        else:
+            box.data.update(data)
+
+        backend.update(namespace, box)
+
+        return jsonify(box.data), 200
+
+    @staticmethod
     @rest('v1/<namespace>/<box_id>', methods=['GET'])
     def rest_retrieve(namespace, box_id):
         """Retrieve and return a box from a namespace."""
@@ -153,6 +177,40 @@ class Main(KytosNApp):
         except (AttributeError, KeyError, TypeError, ValueError):
             box = None
             error = True
+
+        self._execute_callback(event, box, error)
+
+    @listen_to('kytos.storehouse.update')
+    def event_update(self, event):
+        """Update a box_id from namespace.
+
+        This method receive an event with the follow parameters:
+
+        namespace: namespace where the box is stored
+        box_id: the box identify
+        method: 'PUT' or 'PATCH', the default update method is 'PATCH'
+        data: a python dict with the data
+        """
+        error = False
+
+        try:
+            backend = FileSystem()
+            box = backend.retrieve(event.content['namespace'],
+                                   event.content['box_id'])
+        except (AttributeError, KeyError, TypeError, ValueError):
+            box = None
+            error = True
+
+        method = event.content.get('method', 'PATCH')
+        data =  event.content.get('data', {})
+
+        if box:
+            if method == 'PUT':
+                box.data = data
+            else:
+                box.data.update(data)
+
+            backend.update(namespace, box)
 
         self._execute_callback(event, box, error)
 
