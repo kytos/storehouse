@@ -75,9 +75,9 @@ class Main(KytosNApp):
         try:
             event.content['callback'](event, data, error)
         except KeyError:
-            log.error('Create: event without callback function!')
+            log.error(f'Event {event!r} without callback function!')
         except TypeError as exception:
-            log.error('Create: bad callback function!')
+            log.error(f"Bad callback function {event.content['callback']}!")
             log.error(exception)
 
     @staticmethod
