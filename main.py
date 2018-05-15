@@ -73,11 +73,11 @@ class Main(KytosNApp):
     def _execute_callback(event, data, error):
         """Run the callback function for event calls to the NApp."""
         try:
-            event.content['callback'](data, error)
+            event.content['callback'](event, data, error)
         except KeyError:
-            log.error('Create: event without callback function!')
+            log.error(f'Event {event!r} without callback function!')
         except TypeError as exception:
-            log.error('Create: bad callback function!')
+            log.error(f"Bad callback function {event.content['callback']}!")
             log.error(exception)
 
     @staticmethod
@@ -111,7 +111,7 @@ class Main(KytosNApp):
         if not data:
             return jsonify({"response": "Invalid request: empty data"}), 500
 
-        backend= FileSystem()
+        backend = FileSystem()
         box = backend.retrieve(namespace, box_id)
 
         if not box:
@@ -202,9 +202,9 @@ class Main(KytosNApp):
             box = None
             error = True
 
-        box = backend.retrieve(namespace,box_id)
+        box = backend.retrieve(namespace, box_id)
         method = event.content.get('method', 'PATCH')
-        data =  event.content.get('data', {})
+        data = event.content.get('data', {})
 
         if box:
             if method == 'PUT':
