@@ -1,4 +1,4 @@
 """Settings for the kytos/storehouse NApp."""
 
-# If you want to use a custom folder other than kytos workdir.
-CUSTOM_DESTINATION_FOLDER = ""
+# Path to serialize the objects, this is relative to a venv, if a venv exists.
+CUSTOM_DESTINATION_PATH = "/var/tmp/kytos/storehouse"
