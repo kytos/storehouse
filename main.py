@@ -18,7 +18,7 @@ from napps.kytos.storehouse.backends.fs import FileSystem
 class Box:
     """Store data with the necesary metadata."""
 
-    def __init__(self, data, namespace):
+    def __init__(self, data, namespace, name=None):
         """Create a new Box instance.
 
         Args:
@@ -27,6 +27,7 @@ class Box:
         """
         self.data = data
         self.namespace = namespace
+        self.name = name
         self.box_id = uuid4().hex
         self.created_at = str(datetime.utcnow())
         self.owner = None
@@ -35,9 +36,10 @@ class Box:
     def from_json(cls, json_data):
         """Create new instance from input JSON."""
         raw = json.loads(json_data)
-        data = raw['data']
-        namespace = raw['namespace']
-        return cls(data, namespace)
+        data = raw.get('data')
+        namespace = namespace.get('namespace')
+        name = name.get('name')
+        return cls(data, namespace, name)
 
     def to_dict(self):
         """Return the instance as a python dictionary."""
@@ -45,7 +47,8 @@ class Box:
                 'namespace': self.namespace,
                 'owner': self.owner,
                 'created_at': self.created_at,
-                'id': self.box_id}
+                'id': self.box_id,
+                'name': self.name}
 
     def to_json(self):
         """Return the instance as a JSON string."""
