@@ -150,6 +150,23 @@ class Main(KytosNApp):
 
         return jsonify({"response": "Unable to complete request"}), 500
 
+    @staticmethod
+    @rest('v1/<namespace>/<box_id>/<key>', methods=['DELETE'])
+    def rest_delete_key(namespace, box_id, key):
+        """Delete the content of a box given a key."""
+        backend = FileSystem()
+        box = backend.retrieve(namespace, box_id)
+
+        if not box:
+            return jsonify({"response": "Not Found"}), 404
+
+        try:
+            box.data.pop(key)
+        except KeyError:
+            return jsonify({"response": f'Key {key} Not Found'}), 404
+
+        return jsonify(box.data), 202
+
     @listen_to('kytos.storehouse.create')
     def event_create(self, event):
         """Create a box in a namespace based on an event."""
@@ -231,6 +248,24 @@ class Main(KytosNApp):
             error = True
 
         self._execute_callback(event, result, error)
+
+    @listen_to('kytos.storehouse.delete.key')
+    def event_delete_key(self, event):
+        """Delete the content of a box given a key."""
+        error = False
+
+        try:
+            backend = FileSystem()
+            box = backend.retrieve(event.content['namespace'],
+                                   event.content['box_id'])
+        except KeyError:
+            box = None
+            error = True
+
+        if box.data.pop(event.content.get('key'), None):
+            backend.update(namespace, box)
+
+        self._execute_callback(event, box, error)
 
     @listen_to('kytos.storehouse.list')
     def event_list(self, event):
