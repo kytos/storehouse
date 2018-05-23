@@ -22,3 +22,7 @@ class StoreBase:
     def list(self, namespace):
         """List all the boxes in a namespace."""
         raise Exception("Must Implement")
+
+    def list_namespaces(self):
+        """List all the namespaces registered."""
+        raise Exception("Must Implement")

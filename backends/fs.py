@@ -102,3 +102,10 @@ class FileSystem(StoreBase):
     def list(self, namespace):
         """List all the boxes in a namespace."""
         return self._list_namespace(namespace)
+
+    def list_namespaces(self):
+        """List all the namespaces registered."""
+        path = self._get_destination('.')
+        if path.exists():
+            return [x.name for x in path.iterdir() if x.is_dir()]
+        return []
