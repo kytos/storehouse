@@ -5,10 +5,10 @@ Save and load data from the local filesystem.
 
 import pickle
 from pathlib import Path
-
+import os
+from kytos.core import log
 from napps.kytos.storehouse.backends.base import StoreBase
-
-DESTINATION_PATH = "/tmp/kytos/storehouse"
+from napps.kytos.storehouse import settings
 
 
 class FileSystem(StoreBase):
@@ -17,13 +17,32 @@ class FileSystem(StoreBase):
     Save and load data from the local filesystem.
     """
 
-    @staticmethod
-    def _create_dirs(destination):
+    def __init__(self):
+        """Constructor of FileSystem."""
+        self.destination_path = settings.CUSTOM_DESTINATION_PATH
+        self._parse_settings()
+
+    def _parse_settings(self):
+        """Parse settings.
+
+        Update self.destination_path to use the specified path. If
+        kytos is running in a virtualenv, the destination_path
+        will be joined to the root of virtualenv path.
+        """
+        BASE_ENV = os.environ.get('VIRTUAL_ENV', None) or '/'
+        if self.destination_path.startswith(os.path.sep):
+            self.destination_path = self.destination_path[1:]
+        self.destination_path = Path(BASE_ENV).joinpath(self.destination_path)
+        self._create_dirs(self.destination_path)
+        log.debug(f"FileSystem destination_path: {self.destination_path}")
+
+    def _create_dirs(self, destination):
+        """Create directories given a destination."""
         Path(destination).mkdir(parents=True, exist_ok=True)
 
-    @staticmethod
-    def _get_destination(namespace):
-        return Path(DESTINATION_PATH, namespace)
+    def _get_destination(self, namespace):
+        """Get the destination path in this workspace."""
+        return Path(self.destination_path, namespace)
 
     @staticmethod
     def _write_to_file(filename, box):
@@ -63,7 +82,7 @@ class FileSystem(StoreBase):
     def retrieve(self, namespace, box_id):
         """Retrieve a box from a namespace."""
         destination = self._get_destination(namespace).joinpath(box_id)
-        if not destination.exists():
+        if not destination.is_file():
             return False
 
         return self._load_from_file(destination)
