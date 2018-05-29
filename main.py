@@ -4,13 +4,14 @@ Persistence NApp with support to multiple backends.
 """
 
 import json
+import re
 from datetime import datetime
 from uuid import uuid4
 
 from flask import jsonify, request
-
 from kytos.core import KytosNApp, log, rest
 from kytos.core.helpers import listen_to
+
 from napps.kytos.storehouse import settings  # pylint: disable=unused-import
 from napps.kytos.storehouse.backends.fs import FileSystem
 
@@ -18,7 +19,7 @@ from napps.kytos.storehouse.backends.fs import FileSystem
 class Box:
     """Store data with the necesary metadata."""
 
-    def __init__(self, data, namespace):
+    def __init__(self, data, namespace, name=None):
         """Create a new Box instance.
 
         Args:
@@ -27,6 +28,7 @@ class Box:
         """
         self.data = data
         self.namespace = namespace
+        self.name = name
         self.box_id = uuid4().hex
         self.created_at = str(datetime.utcnow())
         self.owner = None
@@ -35,9 +37,10 @@ class Box:
     def from_json(cls, json_data):
         """Create new instance from input JSON."""
         raw = json.loads(json_data)
-        data = raw['data']
-        namespace = raw['namespace']
-        return cls(data, namespace)
+        data = raw.get('data')
+        namespace = namespace.get('namespace')
+        name = name.get('name')
+        return cls(data, namespace, name)
 
     def to_dict(self):
         """Return the instance as a python dictionary."""
@@ -45,7 +48,8 @@ class Box:
                 'namespace': self.namespace,
                 'owner': self.owner,
                 'created_at': self.created_at,
-                'id': self.box_id}
+                'id': self.box_id,
+                'name': self.name}
 
     def to_json(self):
         """Return the instance as a JSON string."""
@@ -63,11 +67,73 @@ class Main(KytosNApp):
 
         Execute right after the NApp is loaded.
         """
+        self.metadata_cache = {}
+        self.create_cache()
         log.info("Storehouse NApp started.")
 
     def execute(self):
         """Execute after the setup method."""
         pass
+
+    def metadata_from_box(self, box):
+        """Return a metadata from box."""
+        return {"box_id": box.box_id,
+                "name": box.name,
+                "owner": box.owner,
+                "created_at": box.created_at}
+
+    def create_cache(self):
+        """Create a cache from all namespaces when the napp setup."""
+        backend = FileSystem()
+        for namespace in backend.list_namespaces():
+            if namespace not in self.metadata_cache:
+                self.metadata_cache[namespace] = []
+
+            for box_id in backend.list(namespace):
+                box = backend.retrieve(namespace, box_id)
+                cache = self.metadata_from_box(box)
+                self.metadata_cache[namespace].append(cache)
+
+    def delete_metadata_from_cache(self, namespace, box_id=None, name=None):
+        """Delete a metadata from cache.
+
+        Args:
+            namespace(str): A namespace, when the box will be deleted
+            box_id(str): Box identifier
+            name(str):  Box name
+        """
+        for cache in self.metadata_cache.get(namespace, []):
+            if box_id in cache["box_id"] or name in cache["name"]:
+                self.metadata_cache.get(namespace, []).remove(cache)
+
+    def add_metadata_to_cache(self, box):
+        """Add a box cache into the namespace cache"""
+        cache = self.metadata_from_box(box)
+        if box.namespace not in self.metadata_cache:
+            self.metadata_cache[box.namespace] = []
+        self.metadata_cache[box.namespace].append(cache)
+
+    def search_metadata_by(self, namespace, filter_option="id", query=""):
+        """Search for all metadata with specific pattern.
+
+        Args:
+            namespace(str): namespace where the box is stored
+            filter_option(str): metadata option
+            query(str): query to be searched
+
+        Returns:
+            list: list of metadata box filtered
+
+        """
+        namespace_cache = self.metadata_cache.get(namespace, [])
+        results = []
+
+        for metadata in namespace_cache:
+            field_value = metadata.get(filter_option, "")
+            if re.match(f".*{query}.*", field_value):
+                results.append(metadata)
+
+        return results
 
     @staticmethod
     def _execute_callback(event, data, error):
@@ -80,19 +146,26 @@ class Main(KytosNApp):
             log.error(f"Bad callback function {event.content['callback']}!")
             log.error(exception)
 
-    @staticmethod
     @rest('v1/<namespace>', methods=['POST'])
-    def rest_create(namespace):
+    @rest('v1/<namespace>/<name>', methods=['POST'])
+    def rest_create(self, namespace, name=None):
         """Create a box in a namespace based on JSON input."""
         data = request.get_json(silent=True)
 
         if not data:
             return jsonify({"response": "Invalid Request"}), 500
 
-        box = Box(data, namespace)
+        box = Box(data, namespace, name)
         backend = FileSystem()
         backend.create(box)
-        return jsonify({"response": "Box created.", "id": box.box_id}), 201
+        self.add_metadata_to_cache(box)
+
+        result = {"response": "Box created.", "id": box.box_id}
+
+        if name:
+            result["name"] = box.name
+
+        return jsonify(result), 201
 
     @staticmethod
     @rest('v1/<namespace>', methods=['GET'])
@@ -138,17 +211,38 @@ class Main(KytosNApp):
 
         return jsonify(box.data), 200
 
-    @staticmethod
     @rest('v1/<namespace>/<box_id>', methods=['DELETE'])
-    def rest_delete(namespace, box_id):
+    def rest_delete(self, namespace, box_id):
         """Delete a box from a namespace."""
         backend = FileSystem()
         result = backend.delete(namespace, box_id)
 
         if result:
+            self.delete_metadata_from_cache(namespace, box_id)
             return jsonify({"response": "Box deleted"}), 202
 
         return jsonify({"response": "Unable to complete request"}), 500
+
+    @rest("v1/<namespace>/search_by/<filter_option>/<query>", methods=['GET'])
+    def rest_search_by(self, namespace, filter_option="name", query=""):
+        """Filter the boxes with specific pattern.
+
+        Args:
+            namespace(str): namespace where the box is stored
+            filter_option(str): metadata option
+            query(str): query to be searched
+
+        Returns:
+            list: list of metadata box filtered
+
+        """
+        box = None
+        results = self.search_metadata_by(namespace, filter_option, query)
+
+        if not results:
+            return jsonify({"response": f"{filter_option} not found"}), 404
+
+        return jsonify(results), 200
 
     @listen_to('kytos.storehouse.create')
     def event_create(self, event):
@@ -159,7 +253,7 @@ class Main(KytosNApp):
             box = Box(event.content['data'], event.content['namespace'])
             backend = FileSystem()
             backend.create(box)
-
+            self.add_metadata_to_cache(box)
         except KeyError:
             box = None
             error = True
@@ -223,9 +317,10 @@ class Main(KytosNApp):
         backend = FileSystem()
 
         try:
-            result = backend.delete(event.content['namespace'],
-                                    event.content['box_id'])
-
+            namespace = event.content['namespace']
+            box_id = event.content['box_id']
+            result = backend.delete(namespace, box_id)
+            self.delete_metadata_from_cache(namespace, box_id)
         except KeyError:
             result = None
             error = True
