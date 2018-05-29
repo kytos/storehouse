@@ -4,13 +4,14 @@ Persistence NApp with support to multiple backends.
 """
 
 import json
+import re
 from datetime import datetime
 from uuid import uuid4
 
 from flask import jsonify, request
-
 from kytos.core import KytosNApp, log, rest
 from kytos.core.helpers import listen_to
+
 from napps.kytos.storehouse import settings  # pylint: disable=unused-import
 from napps.kytos.storehouse.backends.fs import FileSystem
 
@@ -103,7 +104,7 @@ class Main(KytosNApp):
         """
         for cache in self.metadata_cache.get(namespace, []):
             if box_id in cache["box_id"] or name in cache["name"]:
-                self.metadata_cache.get(namespace).remove(cache)
+                self.metadata_cache.get(namespace, []).remove(cache)
 
     def add_metadata_to_cache(self, box):
         """Add a box cache into the namespace cache"""
@@ -111,6 +112,28 @@ class Main(KytosNApp):
         if box.namespace not in self.metadata_cache:
             self.metadata_cache[box.namespace] = []
         self.metadata_cache[box.namespace].append(cache)
+
+    def search_metadata_by(self, namespace, filter_option="id", query=""):
+        """Search for all metadata with specific pattern.
+
+        Args:
+            namespace(str): namespace where the box is stored
+            filter_option(str): metadata option
+            query(str): query to be searched
+
+        Returns:
+            list: list of metadata box filtered
+
+        """
+        namespace_cache = self.metadata_cache.get(namespace, [])
+        results = []
+
+        for metadata in namespace_cache:
+            field_value = metadata.get(filter_option, "")
+            if re.match(f".*{query}.*", field_value):
+                results.append(metadata)
+
+        return results
 
     @staticmethod
     def _execute_callback(event, data, error):
@@ -124,19 +147,25 @@ class Main(KytosNApp):
             log.error(exception)
 
     @rest('v1/<namespace>', methods=['POST'])
-    def rest_create(self, namespace):
+    @rest('v1/<namespace>/<name>', methods=['POST'])
+    def rest_create(self, namespace, name=None):
         """Create a box in a namespace based on JSON input."""
         data = request.get_json(silent=True)
 
         if not data:
             return jsonify({"response": "Invalid Request"}), 500
 
-        box = Box(data, namespace)
+        box = Box(data, namespace, name)
         backend = FileSystem()
         backend.create(box)
         self.add_metadata_to_cache(box)
 
-        return jsonify({"response": "Box created.", "id": box.box_id}), 201
+        result = {"response": "Box created.", "id": box.box_id}
+
+        if name:
+            result["name"] = box.name
+
+        return jsonify(result), 201
 
     @staticmethod
     @rest('v1/<namespace>', methods=['GET'])
@@ -193,6 +222,27 @@ class Main(KytosNApp):
             return jsonify({"response": "Box deleted"}), 202
 
         return jsonify({"response": "Unable to complete request"}), 500
+
+    @rest("v1/<namespace>/search_by/<filter_option>/<query>", methods=['GET'])
+    def rest_search_by(self, namespace, filter_option="name", query=""):
+        """Filter the boxes with specific pattern.
+
+        Args:
+            namespace(str): namespace where the box is stored
+            filter_option(str): metadata option
+            query(str): query to be searched
+
+        Returns:
+            list: list of metadata box filtered
+
+        """
+        box = None
+        results = self.search_metadata_by(namespace, filter_option, query)
+
+        if not results:
+            return jsonify({"response": f"{filter_option} not found"}), 404
+
+        return jsonify(results), 200
 
     @listen_to('kytos.storehouse.create')
     def event_create(self, event):
