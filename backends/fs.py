@@ -10,6 +10,9 @@ from kytos.core import log
 from napps.kytos.storehouse.backends.base import StoreBase
 from napps.kytos.storehouse import settings
 
+def _create_dirs(destination):
+    """Create directories given a destination."""
+    Path(destination).mkdir(parents=True, exist_ok=True)
 
 class FileSystem(StoreBase):
     """Backend class for dealing with FileSystem operation.
@@ -29,16 +32,12 @@ class FileSystem(StoreBase):
         kytos is running in a virtualenv, the destination_path
         will be joined to the root of virtualenv path.
         """
-        BASE_ENV = os.environ.get('VIRTUAL_ENV', None) or '/'
+        base_env = os.environ.get('VIRTUAL_ENV', None) or '/'
         if self.destination_path.startswith(os.path.sep):
             self.destination_path = self.destination_path[1:]
-        self.destination_path = Path(BASE_ENV).joinpath(self.destination_path)
-        self._create_dirs(self.destination_path)
+        self.destination_path = Path(base_env).joinpath(self.destination_path)
+        _create_dirs(self.destination_path)
         log.debug(f"FileSystem destination_path: {self.destination_path}")
-
-    def _create_dirs(self, destination):
-        """Create directories given a destination."""
-        Path(destination).mkdir(parents=True, exist_ok=True)
 
     def _get_destination(self, namespace):
         """Get the destination path in this workspace."""
@@ -75,7 +74,7 @@ class FileSystem(StoreBase):
     def create(self, box):
         """Create a new box."""
         destination = self._get_destination(box.namespace)
-        self._create_dirs(destination)
+        _create_dirs(destination)
         self._write_to_file(destination.joinpath(box.box_id), box)
         return box.box_id
 

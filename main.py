@@ -15,6 +15,12 @@ from kytos.core.helpers import listen_to
 from napps.kytos.storehouse import settings  # pylint: disable=unused-import
 from napps.kytos.storehouse.backends.fs import FileSystem
 
+def metadata_from_box(box):
+    """Return a metadata from box."""
+    return {"box_id": box.box_id,
+            "name": box.name,
+            "owner": box.owner,
+            "created_at": box.created_at}
 
 class Box:
     """Store data with the necesary metadata."""
@@ -73,14 +79,6 @@ class Main(KytosNApp):
 
     def execute(self):
         """Execute after the setup method."""
-        pass
-
-    def metadata_from_box(self, box):
-        """Return a metadata from box."""
-        return {"box_id": box.box_id,
-                "name": box.name,
-                "owner": box.owner,
-                "created_at": box.created_at}
 
     def create_cache(self):
         """Create a cache from all namespaces when the napp setup."""
@@ -91,7 +89,7 @@ class Main(KytosNApp):
 
             for box_id in backend.list(namespace):
                 box = backend.retrieve(namespace, box_id)
-                cache = self.metadata_from_box(box)
+                cache = metadata_from_box(box)
                 self.metadata_cache[namespace].append(cache)
 
     def delete_metadata_from_cache(self, namespace, box_id=None, name=None):
@@ -108,7 +106,7 @@ class Main(KytosNApp):
 
     def add_metadata_to_cache(self, box):
         """Add a box cache into the namespace cache"""
-        cache = self.metadata_from_box(box)
+        cache = metadata_from_box(box)
         if box.namespace not in self.metadata_cache:
             self.metadata_cache[box.namespace] = []
         self.metadata_cache[box.namespace].append(cache)
@@ -236,7 +234,7 @@ class Main(KytosNApp):
             list: list of metadata box filtered
 
         """
-        box = None
+        # box = None
         results = self.search_metadata_by(namespace, filter_option, query)
 
         if not results:

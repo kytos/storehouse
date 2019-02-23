@@ -6,7 +6,6 @@ class StoreBase:
 
     Define the necessary methods for those classes.
     """
-
     def create(self, box):
         """Create a new box."""
         raise Exception("Must Implement")
