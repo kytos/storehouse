@@ -1,6 +1,6 @@
 """Main module of kytos/storehouse Kytos Network Application.
 
-Persistence NApp with support to multiple backends.
+Persistence NApp with support for multiple backends.
 """
 
 import json
@@ -16,8 +16,16 @@ from napps.kytos.storehouse import settings  # pylint: disable=unused-import
 from napps.kytos.storehouse.backends.fs import FileSystem
 
 
+def metadata_from_box(box):
+    """Return a metadata from box."""
+    return {"box_id": box.box_id,
+            "name": box.name,
+            "owner": box.owner,
+            "created_at": box.created_at}
+
+
 class Box:
-    """Store data with the necesary metadata."""
+    """Store data with the necessary metadata."""
 
     def __init__(self, data, namespace, name=None):
         """Create a new Box instance.
@@ -35,7 +43,7 @@ class Box:
 
     @classmethod
     def from_json(cls, json_data):
-        """Create new instance from input JSON."""
+        """Create a new Box instance from JSON input."""
         raw = json.loads(json_data)
         data = raw.get('data')
         namespace = raw.get('namespace')
@@ -62,6 +70,8 @@ class Main(KytosNApp):
     This class is the entry point for this napp.
     """
 
+    metadata_cache = {}
+
     def setup(self):
         """Replace the '__init__' method for the KytosNApp subclass.
 
@@ -83,7 +93,7 @@ class Main(KytosNApp):
 
             for box_id in backend.list(namespace):
                 box = backend.retrieve(namespace, box_id)
-                cache = self.metadata_from_box(box)
+                cache = metadata_from_box(box)
                 self.metadata_cache[namespace].append(cache)
 
     def delete_metadata_from_cache(self, namespace, box_id=None, name=None):
@@ -99,8 +109,8 @@ class Main(KytosNApp):
                 self.metadata_cache.get(namespace, []).remove(cache)
 
     def add_metadata_to_cache(self, box):
-        """Add a box cache into the namespace cache"""
-        cache = self.metadata_from_box(box)
+        """Add a box cache into the namespace cache."""
+        cache = metadata_from_box(box)
         if box.namespace not in self.metadata_cache:
             self.metadata_cache[box.namespace] = []
         self.metadata_cache[box.namespace].append(cache)
@@ -337,23 +347,13 @@ class Main(KytosNApp):
     @rest("v1/backup/<namespace>/<box_id>", methods=['GET'])
     @staticmethod
     def rest_backup(namespace, box_id=None):
-        """Make a rest request to Backup a entire namespace
-        or a object based on it id."""
-
+        """Backup an entire namespace or an object based on its id."""
         backend = FileSystem()
         try:
             return jsonify(backend.backup(namespace, box_id)), 200
         except ValueError:
             return jsonify({"response": "Not Found"}), 404
 
-    @staticmethod
-    def metadata_from_box(box):
-        """Return a metadata from box."""
-        return {"box_id": box.box_id,
-                "name": box.name,
-                "owner": box.owner,
-                "created_at": box.created_at}
-
     def shutdown(self):
-        """Execute before tha NApp is unloaded."""
+        """Execute before the NApp is unloaded."""
         log.info("Storehouse NApp is shutting down.")
