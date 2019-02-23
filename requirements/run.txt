@@ -4,4 +4,3 @@
 #
 #    pip-compile --output-file run.txt run.in
 #
-rrdtool==0.1.11
