@@ -1,6 +1,7 @@
 """Main module of kytos/storehouse Kytos Network Application.
 
 Persistence NApp with support to multiple backends.
+
 """
 
 import json
@@ -15,12 +16,14 @@ from kytos.core.helpers import listen_to
 from napps.kytos.storehouse import settings  # pylint: disable=unused-import
 from napps.kytos.storehouse.backends.fs import FileSystem
 
+
 def metadata_from_box(box):
     """Return a metadata from box."""
     return {"box_id": box.box_id,
             "name": box.name,
             "owner": box.owner,
             "created_at": box.created_at}
+
 
 class Box:
     """Store data with the necesary metadata."""
@@ -105,7 +108,7 @@ class Main(KytosNApp):
                 self.metadata_cache.get(namespace, []).remove(cache)
 
     def add_metadata_to_cache(self, box):
-        """Add a box cache into the namespace cache"""
+        """Add a box cache into the namespace cache."""
         cache = metadata_from_box(box)
         if box.namespace not in self.metadata_cache:
             self.metadata_cache[box.namespace] = []
