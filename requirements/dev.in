@@ -1,0 +1,9 @@
+# All runtime dependencies
+flask
+-e git+git://github.com/kytos/kytos.git#egg=kytos
+-e git+git://github.com/kytos/python-openflow.git#egg=python-openflow
+rrdtool
+
+# Development tools
+yala
+coverage
