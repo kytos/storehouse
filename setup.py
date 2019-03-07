@@ -90,7 +90,7 @@ class Linter(SimpleCommand):
     def run(self):
         """Run yala."""
         print('Yala is running. It may take several seconds...')
-        check_call('yala *.py tests/test_*.py', shell=True)
+        check_call('yala *.py backends/*', shell=True)
 
 
 class CITest(SimpleCommand):
