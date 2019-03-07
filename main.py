@@ -1,7 +1,6 @@
 """Main module of kytos/storehouse Kytos Network Application.
 
-Persistence NApp with support to multiple backends.
-
+Persistence NApp with support for multiple backends.
 """
 
 import json
@@ -26,7 +25,7 @@ def metadata_from_box(box):
 
 
 class Box:
-    """Store data with the necesary metadata."""
+    """Store data with the necessary metadata."""
 
     def __init__(self, data, namespace, name=None):
         """Create a new Box instance.
@@ -44,11 +43,11 @@ class Box:
 
     @classmethod
     def from_json(cls, json_data):
-        """Create new instance from input JSON."""
+        """Create a new Box instance from JSON input."""
         raw = json.loads(json_data)
         data = raw.get('data')
-        namespace = namespace.get('namespace')
-        name = name.get('name')
+        namespace = raw.get('namespace')
+        name = raw.get('name')
         return cls(data, namespace, name)
 
     def to_dict(self):
