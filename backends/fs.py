@@ -3,16 +3,20 @@
 Save and load data from the local filesystem.
 """
 
+import os
 import pickle
 from pathlib import Path
-import os
+
 from kytos.core import log
-from napps.kytos.storehouse.backends.base import StoreBase
+
 from napps.kytos.storehouse import settings
+from napps.kytos.storehouse.backends.base import StoreBase
+
 
 def _create_dirs(destination):
     """Create directories given a destination."""
     Path(destination).mkdir(parents=True, exist_ok=True)
+
 
 class FileSystem(StoreBase):
     """Backend class for dealing with FileSystem operation.
@@ -21,7 +25,6 @@ class FileSystem(StoreBase):
     """
 
     def __init__(self):
-        """Constructor of FileSystem."""
         self.destination_path = settings.CUSTOM_DESTINATION_PATH
         self._parse_settings()
 

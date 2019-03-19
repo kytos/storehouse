@@ -37,7 +37,7 @@ INSTALLED_PATH = VAR_PATH / 'napps' / '.installed'
 CURRENT_DIR = Path('.').resolve()
 
 # NApps enabled by default
-CORE_NAPPS = ['of_core']
+CORE_NAPPS = []
 
 
 class SimpleCommand(Command):
@@ -90,7 +90,7 @@ class Linter(SimpleCommand):
     def run(self):
         """Run yala."""
         print('Yala is running. It may take several seconds...')
-        check_call('yala *.py tests/test_*.py', shell=True)
+        check_call('yala *.py backends/*', shell=True)
 
 
 class CITest(SimpleCommand):

@@ -6,23 +6,10 @@ file.
 
 [UNRELEASED] - Under development
 ********************************
-Added
-=====
-
 Changed
 =======
+- Continuos integration enabled at scrutinizer.
 
-Deprecated
-==========
-
-Removed
-=======
-
-Fixed
-=====
-
-Security
-========
 
 [1.1.0] - 2018-06-15
 ********************

@@ -1,3 +1,2 @@
 # Dependencies for running of_stats NApp (besides kytos that will load it)
-rrdtool
 flask

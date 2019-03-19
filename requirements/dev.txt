@@ -26,7 +26,6 @@ pydocstyle==2.1.1         # via yala
 pyflakes==1.5.0           # via flake8
 pylint==1.7.4             # via yala
 radon==2.1.1              # via yala
-rrdtool==0.1.11
 six==1.11.0               # via astroid, mando, pydocstyle, pylint
 snowballstemmer==1.2.1    # via pydocstyle
 werkzeug==0.12.2          # via flask
