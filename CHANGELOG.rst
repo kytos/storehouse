@@ -8,7 +8,7 @@ file.
 ********************************
 Changed
 =======
-- Continuos integration enabled at scrutinizer.
+- Continuous integration enabled at scrutinizer.
 
 
 [1.1.0] - 2018-06-15
