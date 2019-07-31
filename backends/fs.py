@@ -11,6 +11,10 @@ from napps.kytos.storehouse.backends.base import StoreBase
 from napps.kytos.storehouse import settings
 
 
+class NotFoundException(Exception):
+    """ NotFound Excpetion Class"""
+
+
 class FileSystem(StoreBase):
     """Backend class for dealing with FileSystem operation.
 
@@ -112,26 +116,21 @@ class FileSystem(StoreBase):
         return []
 
     def backup(self, namespace, box_id=None):
-        """Make a rest request to Backup a entire namespace
-        or a object based on it id."""
-        bxs = self.list(namespace)
-        nmsp = self.list_namespaces()
+        """Make a dump of all boxes on a Namespace in a JSON format.
 
-        if namespace not in nmsp or (box_id is not None and box_id not in bxs):
-            return False
+        If box_id is empty, then this method will return all boxes from the
+        namespace.
+        """
+        if namespace not in self.list_namespaces():
+            raise NotFoundException("Namespace not found")
 
-        if box_id is not None and box_id in bxs:
-            result = self._save_box(namespace, box_id)
+        if box_id is None:
+            boxes = self.list(namespace)
         else:
-            result = {}
-            for box in bxs:
-                result[box] = self._save_box(namespace, box)
+            boxes = [box_id]
 
-        return result
+        result = {}
+        for box in boxes:
+            result[box] = self.retrieve(namespace, box).to_json()
 
-    def _save_box(self, namespace, box):
-
-        result = self.retrieve(namespace, box)
-        if result:
-            result = result.to_json()
         return result

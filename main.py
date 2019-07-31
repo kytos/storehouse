@@ -341,10 +341,10 @@ class Main(KytosNApp):
         or a object based on it id."""
 
         backend = FileSystem()
-        result = backend.backup(namespace, box_id)
-        if not result:
+        try:
+            return jsonify(backend.backup(namespace, box_id)), 200
+        except ValueError:
             return jsonify({"response": "Not Found"}), 404
-        return jsonify(result), 200
 
     @staticmethod
     def metadata_from_box(box):
@@ -353,7 +353,6 @@ class Main(KytosNApp):
                 "name": box.name,
                 "owner": box.owner,
                 "created_at": box.created_at}
-
 
     def shutdown(self):
         """Execute before tha NApp is unloaded."""
