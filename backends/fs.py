@@ -22,6 +22,11 @@ class FileSystem(StoreBase):
         self.destination_path = settings.CUSTOM_DESTINATION_PATH
         self._parse_settings()
 
+    @staticmethod
+    def _create_dirs(destination):
+        """Create directories given a destination."""
+        Path(destination).mkdir(parents=True, exist_ok=True)
+
     def _parse_settings(self):
         """Parse settings.
 
@@ -29,16 +34,12 @@ class FileSystem(StoreBase):
         kytos is running in a virtualenv, the destination_path
         will be joined to the root of virtualenv path.
         """
-        BASE_ENV = os.environ.get('VIRTUAL_ENV', None) or '/'
+        base_env = os.environ.get('VIRTUAL_ENV', None) or '/'
         if self.destination_path.startswith(os.path.sep):
             self.destination_path = self.destination_path[1:]
-        self.destination_path = Path(BASE_ENV).joinpath(self.destination_path)
+        self.destination_path = Path(base_env).joinpath(self.destination_path)
         self._create_dirs(self.destination_path)
         log.debug(f"FileSystem destination_path: {self.destination_path}")
-
-    def _create_dirs(self, destination):
-        """Create directories given a destination."""
-        Path(destination).mkdir(parents=True, exist_ok=True)
 
     def _get_destination(self, namespace):
         """Get the destination path in this workspace."""
@@ -89,7 +90,7 @@ class FileSystem(StoreBase):
 
     def update(self, namespace, box):
         """Update a box from a namespace."""
-        destination = self._get_destination(box.namespace)
+        destination = self._get_destination(namespace)
         self._write_to_file(destination.joinpath(box.box_id), box)
         return box.box_id
 
@@ -109,3 +110,28 @@ class FileSystem(StoreBase):
         if path.exists():
             return [x.name for x in path.iterdir() if x.is_dir()]
         return []
+
+    def backup(self, namespace, box_id=None):
+        """Make a rest request to Backup a entire namespace
+        or a object based on it id."""
+        bxs = self.list(namespace)
+        nmsp = self.list_namespaces()
+
+        if namespace not in nmsp or (box_id is not None and box_id not in bxs):
+            return False
+
+        if box_id is not None and box_id in bxs:
+            result = self._save_box(namespace, box_id)
+        else:
+            result = {}
+            for box in bxs:
+                result[box] = self._save_box(namespace, box)
+
+        return result
+
+    def _save_box(self, namespace, box):
+
+        result = self.retrieve(namespace, box)
+        if result:
+            result = result.to_json()
+        return result
