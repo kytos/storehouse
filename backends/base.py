@@ -26,3 +26,7 @@ class StoreBase:
     def list_namespaces(self):
         """List all the namespaces registered."""
         raise Exception("Must Implement")
+
+    def backup(self, namespace, box_id):
+        """Backup one or all the namespaces registered."""
+        raise Exception("Must Implement")
