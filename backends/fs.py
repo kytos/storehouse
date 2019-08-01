@@ -11,6 +11,10 @@ from napps.kytos.storehouse.backends.base import StoreBase
 from napps.kytos.storehouse import settings
 
 
+class NotFoundException(Exception):
+    """ NotFound Excpetion Class"""
+
+
 class FileSystem(StoreBase):
     """Backend class for dealing with FileSystem operation.
 
@@ -22,6 +26,11 @@ class FileSystem(StoreBase):
         self.destination_path = settings.CUSTOM_DESTINATION_PATH
         self._parse_settings()
 
+    @staticmethod
+    def _create_dirs(destination):
+        """Create directories given a destination."""
+        Path(destination).mkdir(parents=True, exist_ok=True)
+
     def _parse_settings(self):
         """Parse settings.
 
@@ -29,16 +38,12 @@ class FileSystem(StoreBase):
         kytos is running in a virtualenv, the destination_path
         will be joined to the root of virtualenv path.
         """
-        BASE_ENV = os.environ.get('VIRTUAL_ENV', None) or '/'
+        base_env = os.environ.get('VIRTUAL_ENV', None) or '/'
         if self.destination_path.startswith(os.path.sep):
             self.destination_path = self.destination_path[1:]
-        self.destination_path = Path(BASE_ENV).joinpath(self.destination_path)
+        self.destination_path = Path(base_env).joinpath(self.destination_path)
         self._create_dirs(self.destination_path)
         log.debug(f"FileSystem destination_path: {self.destination_path}")
-
-    def _create_dirs(self, destination):
-        """Create directories given a destination."""
-        Path(destination).mkdir(parents=True, exist_ok=True)
 
     def _get_destination(self, namespace):
         """Get the destination path in this workspace."""
@@ -89,7 +94,7 @@ class FileSystem(StoreBase):
 
     def update(self, namespace, box):
         """Update a box from a namespace."""
-        destination = self._get_destination(box.namespace)
+        destination = self._get_destination(namespace)
         self._write_to_file(destination.joinpath(box.box_id), box)
         return box.box_id
 
@@ -109,3 +114,19 @@ class FileSystem(StoreBase):
         if path.exists():
             return [x.name for x in path.iterdir() if x.is_dir()]
         return []
+
+    def backup(self, namespace, box_id=None):
+        """Make a dump of all boxes on a Namespace in a JSON format.
+
+        If box_id is empty, then this method will return all boxes from the
+        namespace.
+        """
+        if namespace not in self.list_namespaces():
+            raise NotFoundException("Namespace not found")
+
+        if box_id is None:
+            boxes = self.list(namespace)
+        else:
+            boxes = [box_id]
+
+        return {box: self.retrieve(namespace, box).to_json() for box in boxes}

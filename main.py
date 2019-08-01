@@ -38,8 +38,8 @@ class Box:
         """Create new instance from input JSON."""
         raw = json.loads(json_data)
         data = raw.get('data')
-        namespace = namespace.get('namespace')
-        name = name.get('name')
+        namespace = raw.get('namespace')
+        name = raw.get('name')
         return cls(data, namespace, name)
 
     def to_dict(self):
@@ -73,14 +73,6 @@ class Main(KytosNApp):
 
     def execute(self):
         """Execute after the setup method."""
-        pass
-
-    def metadata_from_box(self, box):
-        """Return a metadata from box."""
-        return {"box_id": box.box_id,
-                "name": box.name,
-                "owner": box.owner,
-                "created_at": box.created_at}
 
     def create_cache(self):
         """Create a cache from all namespaces when the napp setup."""
@@ -236,7 +228,6 @@ class Main(KytosNApp):
             list: list of metadata box filtered
 
         """
-        box = None
         results = self.search_metadata_by(namespace, filter_option, query)
 
         if not results:
@@ -341,6 +332,27 @@ class Main(KytosNApp):
             error = True
 
         self._execute_callback(event, result, error)
+
+    @rest("v1/backup/<namespace>/", methods=['GET'])
+    @rest("v1/backup/<namespace>/<box_id>", methods=['GET'])
+    @staticmethod
+    def rest_backup(namespace, box_id=None):
+        """Make a rest request to Backup a entire namespace
+        or a object based on it id."""
+
+        backend = FileSystem()
+        try:
+            return jsonify(backend.backup(namespace, box_id)), 200
+        except ValueError:
+            return jsonify({"response": "Not Found"}), 404
+
+    @staticmethod
+    def metadata_from_box(box):
+        """Return a metadata from box."""
+        return {"box_id": box.box_id,
+                "name": box.name,
+                "owner": box.owner,
+                "created_at": box.created_at}
 
     def shutdown(self):
         """Execute before tha NApp is unloaded."""

@@ -162,3 +162,40 @@ paths:
                     type: string
                     description: Error creating Box.
                     example: Unable to complete request
+  /api/kytos/storehouse/v1/backup/{namespace}/{box_id}:
+    get:
+      summary: Make a dump of all boxes on a Namespace in a JSON format.
+      parameters:
+        - name: namespace
+          required: true
+          description: Namespace that will dumped.
+          in: path
+        - name: box_id
+          required: False
+          description: ID of the Box to be dumped.
+          in: path
+      responses:
+        200:
+          description: JSON with Box or Namespace dumped.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: object
+                    properties:
+                      key1:
+                        type: string
+                        example: 742e6f874bd14a1cb5551e997f95b6d6
+                        value: {742e6f874bd14a1cb5551e997f95b6d6 : 
+                                  {'value':1, 'some_string':42}}
+        404:
+          description: Namespace or Box not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+                    description: Namespace or Box not found.
+                    example: Not Found
