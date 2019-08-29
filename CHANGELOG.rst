@@ -24,6 +24,20 @@ Fixed
 Security
 ========
 
+[1.2.0] - 2019-08-30
+********************
+Added
+=====
+- Added boxes and namespace backup method. 
+
+Changed
+=======
+- Updated Openapi.
+
+Fixed
+=====
+- Fix linter issues.
+
 [1.1.0] - 2018-06-15
 ********************
 Added
