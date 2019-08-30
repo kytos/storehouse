@@ -24,19 +24,14 @@ Fixed
 Security
 ========
 
+
 [1.2.0] - 2019-08-30
 ********************
 Added
 =====
-- Added boxes and namespace backup method. 
+- Added boxes and namespaces backup methods to the FileSystem backend,
+  with the respective REST API endpoints.
 
-Changed
-=======
-- Updated Openapi.
-
-Fixed
-=====
-- Fix linter issues.
 
 [1.1.0] - 2018-06-15
 ********************
