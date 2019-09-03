@@ -26,8 +26,12 @@ class FileSystem(StoreBase):
 
     def __init__(self):
         """Constructor of FileSystem."""
-        self.destination_path = settings.CUSTOM_DESTINATION_PATH
-        self.lock_path = settings.CUSTOM_LOCK_PATH
+        self.destination_path = getattr(settings,
+                                        'CUSTOM_DESTINATION_PATH',
+                                        '/var/tmp/kytos/storehouse')
+        self.lock_path = getattr(settings,
+                                 'CUSTOM_LOCK_PATH',
+                                 '/var/tmp/lock')
         self._parse_settings()
 
     @staticmethod
