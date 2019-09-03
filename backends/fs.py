@@ -27,6 +27,7 @@ class FileSystem(StoreBase):
     def __init__(self):
         """Constructor of FileSystem."""
         self.destination_path = settings.CUSTOM_DESTINATION_PATH
+        self.lock_path = settings.CUSTOM_LOCK_PATH
         self._parse_settings()
 
     @staticmethod
@@ -44,27 +45,37 @@ class FileSystem(StoreBase):
         base_env = os.environ.get('VIRTUAL_ENV', None) or '/'
         if self.destination_path.startswith(os.path.sep):
             self.destination_path = self.destination_path[1:]
+        if self.lock_path.startswith(os.path.sep):
+            self.lock_path = self.lock_path[1:]
         self.destination_path = Path(base_env).joinpath(self.destination_path)
+        self.lock_path = Path(base_env).joinpath(self.lock_path)
         self._create_dirs(self.destination_path)
+        self._create_dirs(self.lock_path)
         log.debug(f"FileSystem destination_path: {self.destination_path}")
 
     def _get_destination(self, namespace):
         """Get the destination path in this workspace."""
         return Path(self.destination_path, namespace)
 
-    @staticmethod
-    def _write_to_file(filename, box):
-        with open(filename, 'wb') as save_file:
-            pickle.dump(box, save_file)
+    def _write_to_file(self, filename, box):
+        dotted_filename = str(filename).replace('/', '.')
+        lockfile = f'{self.lock_path}/{dotted_filename}.lock'
+        lock = FileLock(lockfile)
+        with lock:
+            with open(filename, 'wb') as save_file:
+                pickle.dump(box, save_file)
 
-    @staticmethod
-    def _load_from_file(filename):
-        try:
-            with open(filename, 'rb') as load_file:
-                data = pickle.load(load_file)
-            return data
-        except pickle.PickleError:
-            return False
+    def _load_from_file(self, filename):
+        dotted_filename = str(filename).replace('/', '.')
+        lockfile = f'{self.lock_path}/{dotted_filename}.lock'
+        lock = FileLock(lockfile)
+        with lock:
+            try:
+                with open(filename, 'rb') as load_file:
+                    data = pickle.load(load_file)
+                return data
+            except pickle.PickleError:
+                return False
 
     @staticmethod
     def _delete_file(path):
