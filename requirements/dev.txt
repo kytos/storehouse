@@ -4,8 +4,6 @@
 #
 #    pip-compile --output-file requirements/dev.txt requirements/dev.in
 #
--e git+git://github.com/kytos/kytos.git#egg=kytos
--e git+git://github.com/kytos/python-openflow.git#egg=python-openflow
 astroid==1.5.3            # via pylint
 click==6.7                # via flask
 colorama==0.3.9           # via radon

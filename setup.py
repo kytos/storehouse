@@ -210,11 +210,10 @@ setup(name=f'kytos_{NAPP_NAME}',
       author='Kytos Team',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
-      install_requires=['setuptools >= 36.0.1'],
+      install_requires=['flask'],
       extras_require={
           'dev': [
               'coverage',
-              'pip-tools',
               'yala',
               'tox',
           ],
