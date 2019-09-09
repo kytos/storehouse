@@ -347,9 +347,7 @@ class Main(KytosNApp):
     @rest("v1/backup/<namespace>/<box_id>", methods=['GET'])
     @staticmethod
     def rest_backup(namespace, box_id=None):
-        """Make a rest request to Backup a entire namespace
-        or a object based on it id."""
-
+        """Backup an entire namespace or an object based on its id."""
         backend = FileSystem()
         try:
             return jsonify(backend.backup(namespace, box_id)), 200

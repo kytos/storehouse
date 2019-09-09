@@ -9,7 +9,7 @@ import shutil
 import sys
 from abc import abstractmethod
 from pathlib import Path
-from subprocess import call, check_call
+from subprocess import CalledProcessError, call, check_call
 
 from setuptools import Command, setup
 from setuptools.command.develop import develop
@@ -90,7 +90,12 @@ class Linter(SimpleCommand):
     def run(self):
         """Run yala."""
         print('Yala is running. It may take several seconds...')
-        check_call('yala *.py backends/*', shell=True)
+        try:
+            check_call('yala *.py backends/*', shell=True)
+            print('No linter error found.')
+        except CalledProcessError:
+            print('Linter check failed. Fix the error(s) above and try again.')
+            exit(-1)
 
 
 class CITest(SimpleCommand):
