@@ -33,6 +33,7 @@ class Box:
         Args:
             data: Data to be stored in the box.
             namespace: Namespace where the box belongs.
+
         """
         self.data = data
         self.namespace = namespace
@@ -103,6 +104,7 @@ class Main(KytosNApp):
             namespace(str): A namespace, when the box will be deleted
             box_id(str): Box identifier
             name(str):  Box name
+
         """
         for cache in self.metadata_cache.get(namespace, []):
             if box_id in cache["box_id"] or name in cache["name"]:

@@ -30,7 +30,7 @@ class FileSystem(StoreBase):
     """
 
     def __init__(self):
-        """Constructor of FileSystem."""
+        """Initialize directory paths for the FileSystem backend."""
         self.destination_path = getattr(settings,
                                         'CUSTOM_DESTINATION_PATH',
                                         '/var/tmp/kytos/storehouse')
