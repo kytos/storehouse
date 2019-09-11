@@ -215,7 +215,7 @@ setup(name=f'kytos_{NAPP_NAME}',
       author='Kytos Team',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
-      install_requires=['flask'],
+      install_requires=['flask', 'kytos'],
       extras_require={
           'dev': [
               'coverage',
@@ -232,7 +232,7 @@ setup(name=f'kytos_{NAPP_NAME}',
           'lint': Linter,
           'egg_info': EggInfo,
       },
-      zip_safe=False,
+      # zip_safe=False,
       classifiers=[
           'License :: OSI Approved :: MIT License',
           'Operating System :: POSIX :: Linux',
