@@ -6,23 +6,10 @@ file.
 
 [UNRELEASED] - Under development
 ********************************
-Added
-=====
-
 Changed
 =======
+- Continuous integration enabled at scrutinizer.
 
-Deprecated
-==========
-
-Removed
-=======
-
-Fixed
-=====
-
-Security
-========
 
 
 [1.2.0] - 2019-08-30

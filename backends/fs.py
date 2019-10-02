@@ -14,8 +14,13 @@ from napps.kytos.storehouse import settings
 from napps.kytos.storehouse.backends.base import StoreBase
 
 
+def _create_dirs(destination):
+    """Create directories given a destination."""
+    Path(destination).mkdir(parents=True, exist_ok=True)
+
+
 class NotFoundException(Exception):
-    """ NotFound Excpetion Class"""
+    """Not Found Exception."""
 
 
 class FileSystem(StoreBase):
@@ -25,7 +30,7 @@ class FileSystem(StoreBase):
     """
 
     def __init__(self):
-        """Constructor of FileSystem."""
+        """Initialize directory paths for the FileSystem backend."""
         self.destination_path = getattr(settings,
                                         'CUSTOM_DESTINATION_PATH',
                                         '/var/tmp/kytos/storehouse')
@@ -33,11 +38,6 @@ class FileSystem(StoreBase):
                                  'CUSTOM_LOCK_PATH',
                                  '/var/tmp/lock')
         self._parse_settings()
-
-    @staticmethod
-    def _create_dirs(destination):
-        """Create directories given a destination."""
-        Path(destination).mkdir(parents=True, exist_ok=True)
 
     def _parse_settings(self):
         """Parse settings.
@@ -53,8 +53,8 @@ class FileSystem(StoreBase):
             self.lock_path = self.lock_path[1:]
         self.destination_path = Path(base_env).joinpath(self.destination_path)
         self.lock_path = Path(base_env).joinpath(self.lock_path)
-        self._create_dirs(self.destination_path)
-        self._create_dirs(self.lock_path)
+        _create_dirs(self.destination_path)
+        _create_dirs(self.lock_path)
         log.debug(f"FileSystem destination_path: {self.destination_path}")
 
     def _get_destination(self, namespace):
@@ -98,7 +98,7 @@ class FileSystem(StoreBase):
     def create(self, box):
         """Create a new box."""
         destination = self._get_destination(box.namespace)
-        self._create_dirs(destination)
+        _create_dirs(destination)
         self._write_to_file(destination.joinpath(box.box_id), box)
         return box.box_id
 
