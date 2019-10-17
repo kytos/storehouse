@@ -119,7 +119,8 @@ class Main(KytosNApp):
 
         """
         for cache in self.metadata_cache.get(namespace, []):
-            if box_id in cache["box_id"] or name in cache["name"]:
+            if (box_id and box_id in cache["box_id"] or
+                    name and name in cache["name"]):
                 self.metadata_cache.get(namespace, []).remove(cache)
 
     def add_metadata_to_cache(self, box):
@@ -129,7 +130,7 @@ class Main(KytosNApp):
             self.metadata_cache[box.namespace] = []
         self.metadata_cache[box.namespace].append(cache)
 
-    def search_metadata_by(self, namespace, filter_option="id", query=""):
+    def search_metadata_by(self, namespace, filter_option="box_id", query=""):
         """Search for all metadata with specific pattern.
 
         Args:
@@ -263,25 +264,23 @@ class Main(KytosNApp):
     def event_create(self, event):
         """Create a box in a namespace based on an event."""
         error = None
+        box_id = event.content.get('box_id')
 
         try:
             data = event.content['data']
             namespace = event.content['namespace']
-            box_id = None
-            if event.content.get('box_id'):
-                box_id = event.content['box_id']
 
-            results = self.search_metadata_by(namespace, query=box_id)
-            if results:
-                raise KeyError
+            if self.search_metadata_by(namespace, query=box_id):
+                raise KeyError("Box id already exists.")
 
+        except KeyError as exc:
+            box = None
+            error = exc
+        else:
             box = Box(data, namespace, box_id=box_id)
             backend = FileSystem()
             backend.create(box)
             self.add_metadata_to_cache(box)
-        except KeyError as exc:
-            box = None
-            error = exc
 
         self._execute_callback(event, box, error)
 

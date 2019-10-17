@@ -215,7 +215,7 @@ setup(name=f'kytos_{NAPP_NAME}',
       author='Kytos Team',
       author_email='of-ng-dev@ncc.unesp.br',
       license='MIT',
-      install_requires=['flask', 'kytos'],
+      install_requires=['filelock', 'flask', 'kytos'],
       extras_require={
           'dev': [
               'coverage',
