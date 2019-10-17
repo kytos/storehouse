@@ -27,7 +27,7 @@ def metadata_from_box(box):
 class Box:
     """Store data with the necessary metadata."""
 
-    def __init__(self, data, namespace, name=None):
+    def __init__(self, data, namespace, name=None, box_id=None):
         """Create a new Box instance.
 
         Args:
@@ -38,7 +38,9 @@ class Box:
         self.data = data
         self.namespace = namespace
         self.name = name
-        self.box_id = uuid4().hex
+        if box_id is None:
+            box_id = uuid4().hex
+        self.box_id = box_id
         self.created_at = str(datetime.utcnow())
         self.owner = None
 
@@ -263,7 +265,17 @@ class Main(KytosNApp):
         error = None
 
         try:
-            box = Box(event.content['data'], event.content['namespace'])
+            data = event.content['data']
+            namespace = event.content['namespace']
+            box_id = None
+            if event.content.get('box_id'):
+                box_id = event.content['box_id']
+
+            results = self.search_metadata_by(namespace, query=box_id)
+            if results:
+                raise KeyError
+
+            box = Box(data, namespace, box_id=box_id)
             backend = FileSystem()
             backend.create(box)
             self.add_metadata_to_cache(box)
