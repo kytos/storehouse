@@ -5,7 +5,6 @@ Persistence NApp with support for multiple backends.
 
 import json
 import re
-import warnings
 from datetime import datetime
 from uuid import uuid4
 
@@ -45,11 +44,15 @@ class Box:
 
     @property
     def name(self):
+        log.warn(
+            "The name parameter will be deprecated soon.",
+            PendingDeprecationWarning
+        )
         return self._name
 
     @name.setter
     def name(self, x):
-        warnings.warn(
+        log.warn(
             "The name parameter will be deprecated soon.",
             PendingDeprecationWarning
         )
