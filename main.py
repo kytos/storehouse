@@ -49,7 +49,10 @@ class Box:
 
     @name.setter
     def name(self, x):
-        warnings.warn("The name parameter will be deprecated soon.", PendingDeprecationWarning)
+        warnings.warn(
+            "The name parameter will be deprecated soon.",
+            PendingDeprecationWarning
+        )
         self._name = x
 
     @classmethod
