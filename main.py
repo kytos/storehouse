@@ -5,6 +5,7 @@ Persistence NApp with support for multiple backends.
 
 import json
 import re
+import warnings
 from datetime import datetime
 from uuid import uuid4
 
@@ -41,6 +42,15 @@ class Box:
         self.box_id = uuid4().hex
         self.created_at = str(datetime.utcnow())
         self.owner = None
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, x):
+        warnings.warn("The name parameter will be deprecated soon.", PendingDeprecationWarning)
+        self._name = x
 
     @classmethod
     def from_json(cls, json_data):
