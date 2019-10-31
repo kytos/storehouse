@@ -44,19 +44,13 @@ class Box:
 
     @property
     def name(self):
-        log.warn(
-            "The name parameter will be deprecated soon.",
-            PendingDeprecationWarning
-        )
+        log.warning("The name parameter will be deprecated soon.")
         return self._name
 
     @name.setter
-    def name(self, x):
-        log.warn(
-            "The name parameter will be deprecated soon.",
-            PendingDeprecationWarning
-        )
-        self._name = x
+    def name(self, value):
+        log.warning("The name parameter will be deprecated soon.")
+        self._name = value
 
     @classmethod
     def from_json(cls, json_data):
