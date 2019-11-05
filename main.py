@@ -42,6 +42,16 @@ class Box:
         self.created_at = str(datetime.utcnow())
         self.owner = None
 
+    @property
+    def name(self):
+        log.warning("The name parameter will be deprecated soon.")
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        log.warning("The name parameter will be deprecated soon.")
+        self._name = value
+
     @classmethod
     def from_json(cls, json_data):
         """Create a new Box instance from JSON input."""
