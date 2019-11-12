@@ -260,31 +260,31 @@ class Main(KytosNApp):
     @listen_to('kytos.storehouse.create')
     def event_create(self, event):
         """Create a box in a namespace based on an event."""
-        error = False
+        error = None
 
         try:
             box = Box(event.content['data'], event.content['namespace'])
             backend = FileSystem()
             backend.create(box)
             self.add_metadata_to_cache(box)
-        except KeyError:
+        except KeyError as exc:
             box = None
-            error = True
+            error = exc
 
         self._execute_callback(event, box, error)
 
     @listen_to('kytos.storehouse.retrieve')
     def event_retrieve(self, event):
         """Retrieve a box from a namespace based on an event."""
-        error = False
+        error = None
 
         try:
             backend = FileSystem()
             box = backend.retrieve(event.content['namespace'],
                                    event.content['box_id'])
-        except KeyError:
+        except KeyError as exc:
             box = None
-            error = True
+            error = exc
 
         self._execute_callback(event, box, error)
 
@@ -299,15 +299,15 @@ class Main(KytosNApp):
         method: 'PUT' or 'PATCH', the default update method is 'PATCH'
         data: a python dict with the data
         """
-        error = False
+        error = None
         backend = FileSystem()
 
         try:
             namespace = event.content['namespace']
             box_id = event.content['box_id']
-        except KeyError:
+        except KeyError as exc:
             box = None
-            error = True
+            error = exc
 
         box = backend.retrieve(namespace, box_id)
         method = event.content.get('method', 'PATCH')
@@ -326,7 +326,7 @@ class Main(KytosNApp):
     @listen_to('kytos.storehouse.delete')
     def event_delete(self, event):
         """Delete a box from a namespace based on an event."""
-        error = False
+        error = None
         backend = FileSystem()
 
         try:
@@ -334,24 +334,24 @@ class Main(KytosNApp):
             box_id = event.content['box_id']
             result = backend.delete(namespace, box_id)
             self.delete_metadata_from_cache(namespace, box_id)
-        except KeyError:
+        except KeyError as exc:
             result = None
-            error = True
+            error = exc
 
         self._execute_callback(event, result, error)
 
     @listen_to('kytos.storehouse.list')
     def event_list(self, event):
         """List all boxes in a namespace based on an event."""
-        error = False
+        error = None
         backend = FileSystem()
 
         try:
             result = backend.list(event.content['namespace'])
 
-        except KeyError:
+        except KeyError as exc:
             result = None
-            error = True
+            error = exc
 
         self._execute_callback(event, result, error)
 
