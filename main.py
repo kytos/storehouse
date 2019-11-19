@@ -46,6 +46,12 @@ class Box:
 
     @property
     def name(self):
+        """Return name from Box instance.
+
+        Returns:
+            string: Box name.
+
+        """
         log.warning("The name parameter will be deprecated soon.")
         return self._name
 
@@ -319,12 +325,11 @@ class Main(KytosNApp):
         except KeyError as exc:
             box = None
             error = exc
+        else:
+            box = backend.retrieve(namespace, box_id)
+            method = event.content.get('method', 'PATCH')
+            data = event.content.get('data', {})
 
-        box = backend.retrieve(namespace, box_id)
-        method = event.content.get('method', 'PATCH')
-        data = event.content.get('data', {})
-
-        if box:
             if method == 'PUT':
                 box.data = data
             elif method == 'PATCH':
@@ -343,11 +348,12 @@ class Main(KytosNApp):
         try:
             namespace = event.content['namespace']
             box_id = event.content['box_id']
-            result = backend.delete(namespace, box_id)
-            self.delete_metadata_from_cache(namespace, box_id)
         except KeyError as exc:
             result = None
             error = exc
+        else:
+            result = backend.delete(namespace, box_id)
+            self.delete_metadata_from_cache(namespace, box_id)
 
         self._execute_callback(event, result, error)
 
