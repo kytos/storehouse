@@ -13,7 +13,6 @@ from kytos.core import KytosNApp, log, rest
 from kytos.core.helpers import listen_to
 
 from napps.kytos.storehouse import settings  # pylint: disable=unused-import
-from napps.kytos.storehouse.backends.fs import FileSystem
 
 
 def metadata_from_box(box):
@@ -58,7 +57,7 @@ class Box:
     @name.setter
     def name(self, value):
         log.warning("The name parameter will be deprecated soon.")
-        self._name = value
+        self._name = value  # pylint: disable=attribute-defined-outside-init
 
     @classmethod
     def from_json(cls, json_data):
@@ -96,7 +95,13 @@ class Main(KytosNApp):
 
         Execute right after the NApp is loaded.
         """
-        self.backend = FileSystem()
+        if settings.BACKEND == "etcd":
+            from napps.kytos.storehouse.backends.etcd import Etcd
+            self.backend = Etcd()
+        else:
+            from napps.kytos.storehouse.backends.fs import FileSystem
+            self.backend = FileSystem()
+
         self.metadata_cache = {}
         self.create_cache()
         log.info("Storehouse NApp started.")
@@ -189,16 +194,14 @@ class Main(KytosNApp):
 
         return jsonify(result), 201
 
-    @staticmethod
     @rest('v1/<namespace>', methods=['GET'])
-    def rest_list(namespace):
+    def rest_list(self, namespace):
         """List all boxes in a namespace."""
         result = self.backend.list(namespace)
         return jsonify(result), 200
 
-    @staticmethod
     @rest('v1/<namespace>/<box_id>', methods=['PUT', 'PATCH'])
-    def rest_update(namespace, box_id):
+    def rest_update(self, namespace, box_id):
         """Update a box_id from namespace."""
         data = request.get_json(silent=True)
 
@@ -219,9 +222,8 @@ class Main(KytosNApp):
 
         return jsonify(box.data), 200
 
-    @staticmethod
     @rest('v1/<namespace>/<box_id>', methods=['GET'])
-    def rest_retrieve(namespace, box_id):
+    def rest_retrieve(self, namespace, box_id):
         """Retrieve and return a box from a namespace."""
         box = self.backend.retrieve(namespace, box_id)
 
@@ -291,7 +293,7 @@ class Main(KytosNApp):
 
         try:
             box = self.backend.retrieve(event.content['namespace'],
-                                   event.content['box_id'])
+                                        event.content['box_id'])
         except KeyError as exc:
             box = None
             error = exc
@@ -367,8 +369,7 @@ class Main(KytosNApp):
 
     @rest("v1/backup/<namespace>/", methods=['GET'])
     @rest("v1/backup/<namespace>/<box_id>", methods=['GET'])
-    @staticmethod
-    def rest_backup(namespace, box_id=None):
+    def rest_backup(self, namespace, box_id=None):
         """Backup an entire namespace or an object based on its id."""
         try:
             return jsonify(self.backend.backup(namespace, box_id)), 200
