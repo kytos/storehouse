@@ -96,6 +96,7 @@ class Main(KytosNApp):
 
         Execute right after the NApp is loaded.
         """
+        self.backend = FileSystem()
         self.metadata_cache = {}
         self.create_cache()
         log.info("Storehouse NApp started.")
@@ -105,13 +106,12 @@ class Main(KytosNApp):
 
     def create_cache(self):
         """Create a cache from all namespaces when the napp setup."""
-        backend = FileSystem()
-        for namespace in backend.list_namespaces():
+        for namespace in self.backend.list_namespaces():
             if namespace not in self.metadata_cache:
                 self.metadata_cache[namespace] = []
 
-            for box_id in backend.list(namespace):
-                box = backend.retrieve(namespace, box_id)
+            for box_id in self.backend.list(namespace):
+                box = self.backend.retrieve(namespace, box_id)
                 cache = metadata_from_box(box)
                 self.metadata_cache[namespace].append(cache)
 
@@ -179,8 +179,7 @@ class Main(KytosNApp):
             return jsonify({"response": "Invalid Request"}), 500
 
         box = Box(data, namespace, name)
-        backend = FileSystem()
-        backend.create(box)
+        self.backend.create(box)
         self.add_metadata_to_cache(box)
 
         result = {"response": "Box created.", "id": box.box_id}
@@ -194,8 +193,7 @@ class Main(KytosNApp):
     @rest('v1/<namespace>', methods=['GET'])
     def rest_list(namespace):
         """List all boxes in a namespace."""
-        backend = FileSystem()
-        result = backend.list(namespace)
+        result = self.backend.list(namespace)
         return jsonify(result), 200
 
     @staticmethod
@@ -207,8 +205,7 @@ class Main(KytosNApp):
         if not data:
             return jsonify({"response": "Invalid request: empty data"}), 500
 
-        backend = FileSystem()
-        box = backend.retrieve(namespace, box_id)
+        box = self.backend.retrieve(namespace, box_id)
 
         if not box:
             return jsonify({"response": "Not Found"}), 404
@@ -218,7 +215,7 @@ class Main(KytosNApp):
         else:
             box.data.update(data)
 
-        backend.update(namespace, box)
+        self.backend.update(namespace, box)
 
         return jsonify(box.data), 200
 
@@ -226,8 +223,7 @@ class Main(KytosNApp):
     @rest('v1/<namespace>/<box_id>', methods=['GET'])
     def rest_retrieve(namespace, box_id):
         """Retrieve and return a box from a namespace."""
-        backend = FileSystem()
-        box = backend.retrieve(namespace, box_id)
+        box = self.backend.retrieve(namespace, box_id)
 
         if not box:
             return jsonify({"response": "Not Found"}), 404
@@ -237,8 +233,7 @@ class Main(KytosNApp):
     @rest('v1/<namespace>/<box_id>', methods=['DELETE'])
     def rest_delete(self, namespace, box_id):
         """Delete a box from a namespace."""
-        backend = FileSystem()
-        result = backend.delete(namespace, box_id)
+        result = self.backend.delete(namespace, box_id)
 
         if result:
             self.delete_metadata_from_cache(namespace, box_id)
@@ -284,8 +279,7 @@ class Main(KytosNApp):
             error = exc
         else:
             box = Box(data, namespace, box_id=box_id)
-            backend = FileSystem()
-            backend.create(box)
+            self.backend.create(box)
             self.add_metadata_to_cache(box)
 
         self._execute_callback(event, box, error)
@@ -296,8 +290,7 @@ class Main(KytosNApp):
         error = None
 
         try:
-            backend = FileSystem()
-            box = backend.retrieve(event.content['namespace'],
+            box = self.backend.retrieve(event.content['namespace'],
                                    event.content['box_id'])
         except KeyError as exc:
             box = None
@@ -316,13 +309,12 @@ class Main(KytosNApp):
         method: 'PUT' or 'PATCH', the default update method is 'PATCH'
         data: a python dict with the data
         """
-        error = None
-        backend = FileSystem()
+        error = False
 
         try:
             namespace = event.content['namespace']
             box_id = event.content['box_id']
-            box = backend.retrieve(namespace, box_id)
+            box = self.backend.retrieve(namespace, box_id)
             if not box:
                 raise KeyError("Box id does not exist.")
 
@@ -338,7 +330,7 @@ class Main(KytosNApp):
             elif method == 'PATCH':
                 box.data.update(data)
 
-            backend.update(namespace, box)
+            self.backend.update(namespace, box)
 
         self._execute_callback(event, box, error)
 
@@ -346,7 +338,6 @@ class Main(KytosNApp):
     def event_delete(self, event):
         """Delete a box from a namespace based on an event."""
         error = None
-        backend = FileSystem()
 
         try:
             namespace = event.content['namespace']
@@ -355,7 +346,7 @@ class Main(KytosNApp):
             result = None
             error = exc
         else:
-            result = backend.delete(namespace, box_id)
+            result = self.backend.delete(namespace, box_id)
             self.delete_metadata_from_cache(namespace, box_id)
 
         self._execute_callback(event, result, error)
@@ -364,10 +355,9 @@ class Main(KytosNApp):
     def event_list(self, event):
         """List all boxes in a namespace based on an event."""
         error = None
-        backend = FileSystem()
 
         try:
-            result = backend.list(event.content['namespace'])
+            result = self.backend.list(event.content['namespace'])
 
         except KeyError as exc:
             result = None
@@ -380,9 +370,8 @@ class Main(KytosNApp):
     @staticmethod
     def rest_backup(namespace, box_id=None):
         """Backup an entire namespace or an object based on its id."""
-        backend = FileSystem()
         try:
-            return jsonify(backend.backup(namespace, box_id)), 200
+            return jsonify(self.backend.backup(namespace, box_id)), 200
         except ValueError:
             return jsonify({"response": "Not Found"}), 404
 
