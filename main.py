@@ -322,11 +322,14 @@ class Main(KytosNApp):
         try:
             namespace = event.content['namespace']
             box_id = event.content['box_id']
+            box = backend.retrieve(namespace, box_id)
+            if not box:
+                raise KeyError("Box id does not exist.")
+
         except KeyError as exc:
             box = None
             error = exc
         else:
-            box = backend.retrieve(namespace, box_id)
             method = event.content.get('method', 'PATCH')
             data = event.content.get('data', {})
 
