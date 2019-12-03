@@ -194,6 +194,23 @@ class Main(KytosNApp):
 
         return jsonify(result), 201
 
+    @rest('v2/<namespace>', methods=['POST'])
+    @rest('v2/<namespace>/<box_id>', methods=['POST'])
+    def rest_create(self, namespace, box_id=None):
+        """Create a box in a namespace based on JSON input."""
+        data = request.get_json(silent=True)
+
+        if not data:
+            return jsonify({"response": "Invalid Request"}), 500
+
+        box = Box(data, namespace, box_id=box_id)
+        self.backend.create(box)
+        self.add_metadata_to_cache(box)
+
+        result = {"response": "Box created.", "id": box.box_id}
+
+        return jsonify(result), 201
+
     @rest('v1/<namespace>', methods=['GET'])
     def rest_list(self, namespace):
         """List all boxes in a namespace."""
