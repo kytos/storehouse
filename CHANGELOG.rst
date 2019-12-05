@@ -12,6 +12,26 @@ Changed
 
 
 
+[1.3.0] - 2019-12-06
+********************
+Added
+=====
+- Added abstract base class for all backend classes.
+- Added setup script.
+- Added a new id parameter to Box class.
+- Added future deprecation warning to name parameter.
+
+Changed
+=======
+- Standardize code to reduce the number of commands inside try statement.
+- Changed error variable to return exception raised by handler.
+
+Fixed
+=====
+- Fixed docstrings.
+- Fixed looping issue when trying to update a nonexistent box.
+
+
 [1.2.0] - 2019-08-30
 ********************
 Added
