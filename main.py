@@ -188,7 +188,7 @@ class Main(KytosNApp):
         data = request.get_json(silent=True)
 
         if not data:
-            return jsonify({"response": "Invalid Request"}), 500
+            return jsonify({"response": "Invalid Request"}), 400
 
         box = Box(data, namespace, name)
         self.backend.create(box)
@@ -203,12 +203,12 @@ class Main(KytosNApp):
 
     @rest('v2/<namespace>', methods=['POST'])
     @rest('v2/<namespace>/<box_id>', methods=['POST'])
-    def rest_create(self, namespace, box_id=None):
+    def rest_create_v2(self, namespace, box_id=None):
         """Create a box in a namespace based on JSON input."""
         data = request.get_json(silent=True)
 
         if not data:
-            return jsonify({"response": "Invalid Request"}), 500
+            return jsonify({"response": "Invalid Request"}), 400
 
         box = Box(data, namespace, box_id=box_id)
         self.backend.create(box)
@@ -230,7 +230,7 @@ class Main(KytosNApp):
         data = request.get_json(silent=True)
 
         if not data:
-            return jsonify({"response": "Invalid request: empty data"}), 500
+            return jsonify({"response": "Invalid request: empty data"}), 400
 
         box = self.backend.retrieve(namespace, box_id)
 
@@ -263,9 +263,10 @@ class Main(KytosNApp):
 
         if result:
             self.delete_metadata_from_cache(namespace, box_id)
-            return jsonify({"response": "Box deleted"}), 202
+            return jsonify({"response": "Box deleted"}), 200
+            # or 204 - No Content
 
-        return jsonify({"response": "Unable to complete request"}), 500
+        return jsonify({"response": "Box not found"}), 404
 
     @rest("v1/<namespace>/search_by/<filter_option>/<query>", methods=['GET'])
     def rest_search_by(self, namespace, filter_option="name", query=""):
