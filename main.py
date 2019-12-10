@@ -43,6 +43,9 @@ class Box:
         self.created_at = str(datetime.utcnow())
         self.owner = None
 
+    def __str__(self):
+        return '%s.%s' % (self.namespace, self.box_id)
+
     @property
     def name(self):
         """Return name from Box instance.
@@ -97,9 +100,11 @@ class Main(KytosNApp):
         """
         if settings.BACKEND == "etcd":
             from napps.kytos.storehouse.backends.etcd import Etcd
+            log.info("Loading 'etcd' backend...")
             self.backend = Etcd()
         else:
             from napps.kytos.storehouse.backends.fs import FileSystem
+            log.info("Loading 'filesystem' backend...")
             self.backend = FileSystem()
 
         self.metadata_cache = {}
@@ -111,12 +116,14 @@ class Main(KytosNApp):
 
     def create_cache(self):
         """Create a cache from all namespaces when the napp setup."""
+        log.debug('Creating storehouse cache...')
         for namespace in self.backend.list_namespaces():
             if namespace not in self.metadata_cache:
                 self.metadata_cache[namespace] = []
 
             for box_id in self.backend.list(namespace):
                 box = self.backend.retrieve(namespace, box_id)
+                log.debug("Loading box '%s'...", box)
                 cache = metadata_from_box(box)
                 self.metadata_cache[namespace].append(cache)
 
