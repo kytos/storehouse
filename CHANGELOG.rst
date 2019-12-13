@@ -11,6 +11,24 @@ Changed
 - Continuous integration enabled at scrutinizer.
 
 
+[1.3.0] - 2019-12-13
+********************
+Added
+=====
+- Added new `etcd` backend (experimental).
+- Added abstract base class for all backend classes.
+- Added setup script.
+- Added a new id parameter to Box class.
+- Added future deprecation warning to `name` parameter.
+
+Changed
+=======
+- Return original exception objects on event errors.
+
+Fixed
+=====
+- Fixed looping issue when trying to update a nonexistent box.
+
 
 [1.2.0] - 2019-08-30
 ********************
