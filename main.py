@@ -98,6 +98,7 @@ class Main(KytosNApp):
 
         Execute right after the NApp is loaded.
         """
+        # pylint: disable=import-outside-toplevel
         if settings.BACKEND == "etcd":
             from napps.kytos.storehouse.backends.etcd import Etcd
             log.info("Loading 'etcd' backend...")

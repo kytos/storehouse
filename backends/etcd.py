@@ -1,18 +1,17 @@
 """etcd backend for storehouse."""
 
+import pickle
+from typing import Union
+
 import etcd3
 
 from napps.kytos.storehouse.backends.base import StoreBase
 
-from typing import Union
-import logging
-import pickle
-
-log = logging.getLogger(__name__)
-
 
 def split_fullname(fullname: bytes):
     """
+    Split full backend string name into (namespace, box_id) tuple.
+
     >>> split_fullname(b'name.space.box_id')
     [b'name.space', b'box_id']
     """
@@ -20,6 +19,7 @@ def split_fullname(fullname: bytes):
 
 
 def join_fullname(namespace: Union[bytes, str], box_id: Union[bytes, str]):
+    """Join (namespace, box_id) tuple into a "namespace.box_id" string."""
     if isinstance(namespace, bytes) and isinstance(box_id, bytes):
         return namespace + b'.' + box_id
     return f'{namespace}.{box_id}'
@@ -37,7 +37,8 @@ class Etcd(StoreBase):
     def create(self, box):
         """Create a new box."""
         raw_data = pickle.dumps(box)
-        return self.etcd.put(join_fullname(box.namespace, box.box_id), raw_data)
+        return self.etcd.put(join_fullname(box.namespace, box.box_id),
+                             raw_data)
 
     def retrieve(self, namespace, box_id):
         """Retrieve a box from a namespace."""
