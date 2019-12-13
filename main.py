@@ -13,7 +13,6 @@ from kytos.core import KytosNApp, log, rest
 from kytos.core.helpers import listen_to
 
 from napps.kytos.storehouse import settings  # pylint: disable=unused-import
-from napps.kytos.storehouse.backends.fs import FileSystem
 
 
 def metadata_from_box(box):
@@ -44,6 +43,9 @@ class Box:
         self.created_at = str(datetime.utcnow())
         self.owner = None
 
+    def __str__(self):
+        return '%s.%s' % (self.namespace, self.box_id)
+
     @property
     def name(self):
         """Return name from Box instance.
@@ -58,7 +60,7 @@ class Box:
     @name.setter
     def name(self, value):
         log.warning("The name parameter will be deprecated soon.")
-        self._name = value
+        self._name = value  # pylint: disable=attribute-defined-outside-init
 
     @classmethod
     def from_json(cls, json_data):
@@ -96,6 +98,16 @@ class Main(KytosNApp):
 
         Execute right after the NApp is loaded.
         """
+        # pylint: disable=import-outside-toplevel
+        if settings.BACKEND == "etcd":
+            from napps.kytos.storehouse.backends.etcd import Etcd
+            log.info("Loading 'etcd' backend...")
+            self.backend = Etcd()
+        else:
+            from napps.kytos.storehouse.backends.fs import FileSystem
+            log.info("Loading 'filesystem' backend...")
+            self.backend = FileSystem()
+
         self.metadata_cache = {}
         self.create_cache()
         log.info("Storehouse NApp started.")
@@ -105,13 +117,14 @@ class Main(KytosNApp):
 
     def create_cache(self):
         """Create a cache from all namespaces when the napp setup."""
-        backend = FileSystem()
-        for namespace in backend.list_namespaces():
+        log.debug('Creating storehouse cache...')
+        for namespace in self.backend.list_namespaces():
             if namespace not in self.metadata_cache:
                 self.metadata_cache[namespace] = []
 
-            for box_id in backend.list(namespace):
-                box = backend.retrieve(namespace, box_id)
+            for box_id in self.backend.list(namespace):
+                box = self.backend.retrieve(namespace, box_id)
+                log.debug("Loading box '%s'...", box)
                 cache = metadata_from_box(box)
                 self.metadata_cache[namespace].append(cache)
 
@@ -176,11 +189,10 @@ class Main(KytosNApp):
         data = request.get_json(silent=True)
 
         if not data:
-            return jsonify({"response": "Invalid Request"}), 500
+            return jsonify({"response": "Invalid Request"}), 400
 
         box = Box(data, namespace, name)
-        backend = FileSystem()
-        backend.create(box)
+        self.backend.create(box)
         self.add_metadata_to_cache(box)
 
         result = {"response": "Box created.", "id": box.box_id}
@@ -190,25 +202,38 @@ class Main(KytosNApp):
 
         return jsonify(result), 201
 
-    @staticmethod
+    @rest('v2/<namespace>', methods=['POST'])
+    @rest('v2/<namespace>/<box_id>', methods=['POST'])
+    def rest_create_v2(self, namespace, box_id=None):
+        """Create a box in a namespace based on JSON input."""
+        data = request.get_json(silent=True)
+
+        if not data:
+            return jsonify({"response": "Invalid Request"}), 400
+
+        box = Box(data, namespace, box_id=box_id)
+        self.backend.create(box)
+        self.add_metadata_to_cache(box)
+
+        result = {"response": "Box created.", "id": box.box_id}
+
+        return jsonify(result), 201
+
     @rest('v1/<namespace>', methods=['GET'])
-    def rest_list(namespace):
+    def rest_list(self, namespace):
         """List all boxes in a namespace."""
-        backend = FileSystem()
-        result = backend.list(namespace)
+        result = self.backend.list(namespace)
         return jsonify(result), 200
 
-    @staticmethod
     @rest('v1/<namespace>/<box_id>', methods=['PUT', 'PATCH'])
-    def rest_update(namespace, box_id):
+    def rest_update(self, namespace, box_id):
         """Update a box_id from namespace."""
         data = request.get_json(silent=True)
 
         if not data:
-            return jsonify({"response": "Invalid request: empty data"}), 500
+            return jsonify({"response": "Invalid request: empty data"}), 400
 
-        backend = FileSystem()
-        box = backend.retrieve(namespace, box_id)
+        box = self.backend.retrieve(namespace, box_id)
 
         if not box:
             return jsonify({"response": "Not Found"}), 404
@@ -218,16 +243,14 @@ class Main(KytosNApp):
         else:
             box.data.update(data)
 
-        backend.update(namespace, box)
+        self.backend.update(namespace, box)
 
         return jsonify(box.data), 200
 
-    @staticmethod
     @rest('v1/<namespace>/<box_id>', methods=['GET'])
-    def rest_retrieve(namespace, box_id):
+    def rest_retrieve(self, namespace, box_id):
         """Retrieve and return a box from a namespace."""
-        backend = FileSystem()
-        box = backend.retrieve(namespace, box_id)
+        box = self.backend.retrieve(namespace, box_id)
 
         if not box:
             return jsonify({"response": "Not Found"}), 404
@@ -237,14 +260,14 @@ class Main(KytosNApp):
     @rest('v1/<namespace>/<box_id>', methods=['DELETE'])
     def rest_delete(self, namespace, box_id):
         """Delete a box from a namespace."""
-        backend = FileSystem()
-        result = backend.delete(namespace, box_id)
+        result = self.backend.delete(namespace, box_id)
 
         if result:
             self.delete_metadata_from_cache(namespace, box_id)
-            return jsonify({"response": "Box deleted"}), 202
+            return jsonify({"response": "Box deleted"}), 200
+            # or 204 - No Content
 
-        return jsonify({"response": "Unable to complete request"}), 500
+        return jsonify({"response": "Box not found"}), 404
 
     @rest("v1/<namespace>/search_by/<filter_option>/<query>", methods=['GET'])
     def rest_search_by(self, namespace, filter_option="name", query=""):
@@ -284,8 +307,7 @@ class Main(KytosNApp):
             error = exc
         else:
             box = Box(data, namespace, box_id=box_id)
-            backend = FileSystem()
-            backend.create(box)
+            self.backend.create(box)
             self.add_metadata_to_cache(box)
 
         self._execute_callback(event, box, error)
@@ -296,9 +318,8 @@ class Main(KytosNApp):
         error = None
 
         try:
-            backend = FileSystem()
-            box = backend.retrieve(event.content['namespace'],
-                                   event.content['box_id'])
+            box = self.backend.retrieve(event.content['namespace'],
+                                        event.content['box_id'])
         except KeyError as exc:
             box = None
             error = exc
@@ -316,13 +337,12 @@ class Main(KytosNApp):
         method: 'PUT' or 'PATCH', the default update method is 'PATCH'
         data: a python dict with the data
         """
-        error = None
-        backend = FileSystem()
+        error = False
 
         try:
             namespace = event.content['namespace']
             box_id = event.content['box_id']
-            box = backend.retrieve(namespace, box_id)
+            box = self.backend.retrieve(namespace, box_id)
             if not box:
                 raise KeyError("Box id does not exist.")
 
@@ -338,7 +358,7 @@ class Main(KytosNApp):
             elif method == 'PATCH':
                 box.data.update(data)
 
-            backend.update(namespace, box)
+            self.backend.update(namespace, box)
 
         self._execute_callback(event, box, error)
 
@@ -346,7 +366,6 @@ class Main(KytosNApp):
     def event_delete(self, event):
         """Delete a box from a namespace based on an event."""
         error = None
-        backend = FileSystem()
 
         try:
             namespace = event.content['namespace']
@@ -355,7 +374,7 @@ class Main(KytosNApp):
             result = None
             error = exc
         else:
-            result = backend.delete(namespace, box_id)
+            result = self.backend.delete(namespace, box_id)
             self.delete_metadata_from_cache(namespace, box_id)
 
         self._execute_callback(event, result, error)
@@ -364,10 +383,9 @@ class Main(KytosNApp):
     def event_list(self, event):
         """List all boxes in a namespace based on an event."""
         error = None
-        backend = FileSystem()
 
         try:
-            result = backend.list(event.content['namespace'])
+            result = self.backend.list(event.content['namespace'])
 
         except KeyError as exc:
             result = None
@@ -377,12 +395,10 @@ class Main(KytosNApp):
 
     @rest("v1/backup/<namespace>/", methods=['GET'])
     @rest("v1/backup/<namespace>/<box_id>", methods=['GET'])
-    @staticmethod
-    def rest_backup(namespace, box_id=None):
+    def rest_backup(self, namespace, box_id=None):
         """Backup an entire namespace or an object based on its id."""
-        backend = FileSystem()
         try:
-            return jsonify(backend.backup(namespace, box_id)), 200
+            return jsonify(self.backend.backup(namespace, box_id)), 200
         except ValueError:
             return jsonify({"response": "Not Found"}), 404
 
