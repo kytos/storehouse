@@ -2,6 +2,8 @@
 Overview
 ########
 
+|License| |Build| |Coverage| |Quality|
+
 This NApp is responsible for data persistence, saving and retrieving
 information. It can be acessed by external agents through the REST API or by
 other NApps, using the event-based methods.
@@ -139,3 +141,15 @@ Rest API
 You can find a list of the available endpoints and example input/output in the
 'REST API' tab in this NApp's webpage in the `Kytos NApps Server
 <https://napps.kytos.io/kytos/storehouse>`_.
+
+.. |License| image:: https://img.shields.io/github/license/kytos/kytos.svg
+   :target: https://github.com/kytos/storehouse/blob/master/LICENSE
+.. |Build| image:: https://scrutinizer-ci.com/g/kytos/storehouse/badges/build.png?b=master
+  :alt: Build status
+  :target: https://scrutinizer-ci.com/g/kytos/storehouse/?branch=master
+.. |Coverage| image:: https://scrutinizer-ci.com/g/kytos/storehouse/badges/coverage.png?b=master
+  :alt: Code coverage
+  :target: https://scrutinizer-ci.com/g/kytos/storehouse/?branch=master
+.. |Quality| image:: https://scrutinizer-ci.com/g/kytos/storehouse/badges/quality-score.png?b=master
+  :alt: Code-quality score
+  :target: https://scrutinizer-ci.com/g/kytos/storehouse/?branch=master
