@@ -6,10 +6,17 @@ file.
 
 [UNRELEASED] - Under development
 ********************************
+Added
+=====
+- Added developer requirements.
+- Added support for automated tests and CI with Travis.
+- Added tags decorator to run tests by type and size.
+
 Changed
 =======
 - Continuous integration enabled at scrutinizer.
-
+- Changed README.rst to include some info badges.
+- Changed tests structure to separate unit and integration tests.
 
 [1.3.0] - 2019-12-13
 ********************
