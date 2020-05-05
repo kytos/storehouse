@@ -1,0 +1,5 @@
+pip-tools >= 2.0
+coverage
+pytest
+yala
+tox
