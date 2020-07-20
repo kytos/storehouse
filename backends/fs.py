@@ -3,6 +3,7 @@
 Save and load data from the local filesystem.
 """
 
+import logging
 import os
 import pickle
 from pathlib import Path
@@ -31,6 +32,7 @@ class FileSystem(StoreBase):
 
     def __init__(self):
         """Initialize directory paths for the FileSystem backend."""
+        logging.getLogger("filelock").setLevel(logging.WARNING)
         self.destination_path = getattr(settings,
                                         'CUSTOM_DESTINATION_PATH',
                                         '/var/tmp/kytos/storehouse')
