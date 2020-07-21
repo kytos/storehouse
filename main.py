@@ -2,16 +2,15 @@
 
 Persistence NApp with support for multiple backends.
 """
-
 import json
 import re
 from datetime import datetime
 from uuid import uuid4
 
 from flask import jsonify, request
+
 from kytos.core import KytosNApp, log, rest
 from kytos.core.helpers import listen_to
-
 from napps.kytos.storehouse import settings  # pylint: disable=unused-import
 
 
@@ -98,7 +97,7 @@ class Main(KytosNApp):
 
         Execute right after the NApp is loaded.
         """
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=bad-option-value,W0201,E0012
         if settings.BACKEND == "etcd":
             from napps.kytos.storehouse.backends.etcd import Etcd
             log.info("Loading 'etcd' backend...")
@@ -402,6 +401,7 @@ class Main(KytosNApp):
         except ValueError:
             return jsonify({"response": "Not Found"}), 404
 
+    # pylint: disable=R0201
     def shutdown(self):
         """Execute before the NApp is unloaded."""
         log.info("Storehouse NApp is shutting down.")

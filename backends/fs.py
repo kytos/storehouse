@@ -8,8 +8,8 @@ import pickle
 from pathlib import Path
 
 from filelock import FileLock
-from kytos.core import log
 
+from kytos.core import log
 from napps.kytos.storehouse import settings
 from napps.kytos.storehouse.backends.base import StoreBase
 

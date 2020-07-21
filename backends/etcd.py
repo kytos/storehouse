@@ -1,5 +1,4 @@
 """etcd backend for storehouse."""
-
 import pickle
 from typing import Union
 
@@ -58,6 +57,7 @@ class Etcd(StoreBase):
         """List all the namespaces registered."""
         return set(split_fullname(k)[0] for k in self._get_all_keys())
 
+    # pylint: disable=W0613
     def backup(self, namespace=None, box_id=None):
         """Backup all the namespaces registered."""
         return (pickle.loads(box) for box in self.etcd.get_all())
