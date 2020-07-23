@@ -3,7 +3,7 @@
   "username": "kytos",
   "name": "storehouse",
   "description": "Persistence NApp with support for multiple backends",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "napp_dependencies": [],
   "license": "MIT",
   "tags": ["persistency", "storage"],
