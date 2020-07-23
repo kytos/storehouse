@@ -6,9 +6,40 @@ file.
 
 [UNRELEASED] - Under development
 ********************************
+Added
+=====
+
+Changed
+=======
+
+Deprecated
+==========
+
+Removed
+=======
+
+Fixed
+=====
+
+Security
+========
+
+
+[1.3.1] - 2020-07-23
+********************
+
+Added
+=====
+- Added unit tests, increasing coverage from 0% to 96%.
+- Added tags decorator to run tests by type and size.
+- Added support for automated tests and CI with Travis.
+- Added developer requirements.
+
 Changed
 =======
 - Continuous integration enabled at scrutinizer.
+- Changed README.rst to include some info badges.
+- Changed tests structure to separate unit and integration tests.
 
 
 [1.3.0] - 2019-12-13
