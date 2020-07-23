@@ -3,7 +3,6 @@
 Run "python3 setup.py --help-commands" to list all available commands and their
 descriptions.
 """
-
 import os
 import shutil
 import sys
@@ -147,7 +146,7 @@ class Linter(SimpleCommand):
         """Run yala."""
         print('Yala is running. It may take several seconds...')
         try:
-            check_call('yala *.py backends/*', shell=True)
+            check_call('yala *.py backends/* tests', shell=True)
             print('No linter error found.')
         except CalledProcessError:
             print('Linter check failed. Fix the error(s) above and try again.')

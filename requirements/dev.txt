@@ -4,6 +4,8 @@
 #
 #    pip-compile --output-file=dev.txt dev.in
 #
+-e git+https://github.com/kytos/kytos.git#egg=kytos
+-e .
 appdirs==1.4.3            # via virtualenv
 astroid==2.3.3            # via pylint
 attrs==19.3.0             # via pytest

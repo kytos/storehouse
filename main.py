@@ -9,9 +9,9 @@ from datetime import datetime
 from uuid import uuid4
 
 from flask import jsonify, request
+
 from kytos.core import KytosNApp, log, rest
 from kytos.core.helpers import listen_to
-
 from napps.kytos.storehouse import settings  # pylint: disable=unused-import
 
 
