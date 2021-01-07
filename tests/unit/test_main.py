@@ -39,7 +39,7 @@ class TestMain(TestCase):
 
     def test_create_cache(self):
         """Test create_cache method."""
-        box = Box('any', 'namespace', 'ABC', '123')
+        box = Box('any', 'namespace', '123')
         self.napp.backend.list_namespaces.return_value = ['namespace']
         self.napp.backend.list.return_value = ['123']
         self.napp.backend.retrieve.return_value = box
@@ -48,7 +48,6 @@ class TestMain(TestCase):
 
         box_metadata = self.napp.metadata_cache['namespace'][0]
         self.assertEqual(box_metadata['box_id'], box.box_id)
-        self.assertEqual(box_metadata['name'], box.name)
         self.assertEqual(box_metadata['owner'], box.owner)
         self.assertEqual(box_metadata['created_at'], box.created_at)
 
@@ -58,20 +57,13 @@ class TestMain(TestCase):
         self.napp.delete_metadata_from_cache('namespace', box_id='1')
         self.assertEqual(self.napp.metadata_cache, {'namespace': []})
 
-    def test_delete_metadata_from_cache_by_name(self):
-        """Test delete_metadata_from_cache method using name."""
-        self.napp.metadata_cache = {'namespace': [{'name': 'n'}]}
-        self.napp.delete_metadata_from_cache('namespace', name='n')
-        self.assertEqual(self.napp.metadata_cache, {'namespace': []})
-
     def test_add_metadata_to_cache(self):
         """Test add_metadata_to_cache method."""
-        box = Box('any', 'namespace', 'ABC', '123')
+        box = Box('any', 'namespace', '123')
         self.napp.add_metadata_to_cache(box)
 
         box_metadata = self.napp.metadata_cache['namespace'][0]
         self.assertEqual(box_metadata['box_id'], box.box_id)
-        self.assertEqual(box_metadata['name'], box.name)
         self.assertEqual(box_metadata['owner'], box.owner)
         self.assertEqual(box_metadata['created_at'], box.created_at)
 
@@ -92,11 +84,10 @@ class TestMain(TestCase):
         (mock_box, mock_add_metadata_to_cache) = args
         box = MagicMock()
         box.box_id = '123'
-        box.name = 'ABC'
         mock_box.return_value = box
 
         api = get_test_client(self.napp.controller, self.napp)
-        url = "%s/v1/namespace/123" % self.API_URL
+        url = "%s/v1/123" % self.API_URL
         response = api.open(url, method='POST', json={'data': '123'})
 
         mock_add_metadata_to_cache.assert_called_with(box)
@@ -106,7 +97,7 @@ class TestMain(TestCase):
     def test_rest_create_400(self, *args):
         """Test rest_create method to HTTP 400 response."""
         api = get_test_client(self.napp.controller, self.napp)
-        url = "%s/v1/namespace/123" % self.API_URL
+        url = "%s/v1/123" % self.API_URL
         response = api.open(url, method='POST')
 
         self.assertEqual(response.status_code, 400)
@@ -118,7 +109,6 @@ class TestMain(TestCase):
         (mock_box, mock_add_metadata_to_cache) = args
         box = MagicMock()
         box.box_id = '123'
-        box.name = 'ABC'
         mock_box.return_value = box
 
         api = get_test_client(self.napp.controller, self.napp)

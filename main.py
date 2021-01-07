@@ -18,7 +18,6 @@ from napps.kytos.storehouse import settings  # pylint: disable=unused-import
 def metadata_from_box(box):
     """Return a metadata from box."""
     return {"box_id": box.box_id,
-            "name": box.name,
             "owner": box.owner,
             "created_at": box.created_at}
 
@@ -26,7 +25,7 @@ def metadata_from_box(box):
 class Box:
     """Store data with the necessary metadata."""
 
-    def __init__(self, data, namespace, name=None, box_id=None):
+    def __init__(self, data, namespace, box_id=None):
         """Create a new Box instance.
 
         Args:
@@ -36,7 +35,6 @@ class Box:
         """
         self.data = data
         self.namespace = namespace
-        self.name = name
         if box_id is None:
             box_id = uuid4().hex
         self.box_id = box_id
@@ -46,30 +44,13 @@ class Box:
     def __str__(self):
         return '%s.%s' % (self.namespace, self.box_id)
 
-    @property
-    def name(self):
-        """Return name from Box instance.
-
-        Returns:
-            string: Box name.
-
-        """
-        log.warning("The name parameter will be deprecated soon.")
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        log.warning("The name parameter will be deprecated soon.")
-        self._name = value  # pylint: disable=attribute-defined-outside-init
-
     @classmethod
     def from_json(cls, json_data):
         """Create a new Box instance from JSON input."""
         raw = json.loads(json_data)
         data = raw.get('data')
         namespace = raw.get('namespace')
-        name = raw.get('name')
-        return cls(data, namespace, name)
+        return cls(data, namespace)
 
     def to_dict(self):
         """Return the instance as a python dictionary."""
@@ -77,8 +58,8 @@ class Box:
                 'namespace': self.namespace,
                 'owner': self.owner,
                 'created_at': self.created_at,
-                'id': self.box_id,
-                'name': self.name}
+                'id': self.box_id
+                }
 
     def to_json(self):
         """Return the instance as a JSON string."""
@@ -128,18 +109,16 @@ class Main(KytosNApp):
                 cache = metadata_from_box(box)
                 self.metadata_cache[namespace].append(cache)
 
-    def delete_metadata_from_cache(self, namespace, box_id=None, name=None):
+    def delete_metadata_from_cache(self, namespace, box_id=None):
         """Delete a metadata from cache.
 
         Args:
             namespace(str): A namespace, when the box will be deleted
             box_id(str): Box identifier
-            name(str):  Box name
 
         """
         for cache in self.metadata_cache.get(namespace, []):
-            if (box_id and box_id in cache["box_id"] or
-                    name and name in cache["name"]):
+            if (box_id and box_id in cache["box_id"]):
                 self.metadata_cache.get(namespace, []).remove(cache)
 
     def add_metadata_to_cache(self, box):
@@ -183,22 +162,18 @@ class Main(KytosNApp):
             log.error(exception)
 
     @rest('v1/<namespace>', methods=['POST'])
-    @rest('v1/<namespace>/<name>', methods=['POST'])
-    def rest_create(self, namespace, name=None):
+    def rest_create(self, namespace):
         """Create a box in a namespace based on JSON input."""
         data = request.get_json(silent=True)
 
         if not data:
             return jsonify({"response": "Invalid Request"}), 400
 
-        box = Box(data, namespace, name)
+        box = Box(data, namespace)
         self.backend.create(box)
         self.add_metadata_to_cache(box)
 
         result = {"response": "Box created.", "id": box.box_id}
-
-        if name:
-            result["name"] = box.name
 
         return jsonify(result), 201
 

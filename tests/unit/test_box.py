@@ -17,17 +17,12 @@ class TestBox(TestCase):
         box_str = '%s.%s' % (self.box.namespace, self.box.box_id)
         self.assertEqual(str(self.box), box_str)
 
-    def test_name_property(self):
-        """Test name property."""
-        self.assertEqual(self.box.name, 'box')
-
     def test_from_json(self):
         """Test from_json method."""
-        data = '{"data": "a", "namespace": "b", "name": "c"}'
+        data = '{"data": "a", "namespace": "b"}'
         from_json_box = self.box.from_json(data)
         self.assertEqual(from_json_box.data, 'a')
         self.assertEqual(from_json_box.namespace, 'b')
-        self.assertEqual(from_json_box.name, 'c')
 
     def test_to_dict(self):
         """Test to_dict method."""
@@ -36,8 +31,7 @@ class TestBox(TestCase):
             "namespace": self.box.namespace,
             "owner": self.box.owner,
             "created_at": self.box.created_at,
-            "id": self.box.box_id,
-            "name": self.box.name
+            "id": self.box.box_id
         }
         dict_data = self.box.to_dict()
         self.assertEqual(dict_data, expected_data)
@@ -49,8 +43,7 @@ class TestBox(TestCase):
             "namespace": self.box.namespace,
             "owner": self.box.owner,
             "created_at": self.box.created_at,
-            "id": self.box.box_id,
-            "name": self.box.name
+            "id": self.box.box_id
         }
         expected_data = json.dumps(data, indent=4)
         json_data = self.box.to_json()
@@ -59,7 +52,6 @@ class TestBox(TestCase):
     def test_metadata_from_box(self):
         """Test metadata_from_box method."""
         expected_metadata = {"box_id": self.box.box_id,
-                             "name": self.box.name,
                              "owner": self.box.owner,
                              "created_at": self.box.created_at}
         metadata = metadata_from_box(self.box)
